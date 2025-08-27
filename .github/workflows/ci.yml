@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} with ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        compiler:
+          - { name: "GCC", cc: "gcc", cxx: "g++" }
+          - { name: "Clang", cc: "clang", cxx: "clang++" }
+        exclude:
+          # Windows doesn't have GCC/Clang by default in runner
+          - os: windows-latest
+            compiler: { name: "GCC", cc: "gcc", cxx: "g++" }
+          - os: windows-latest
+            compiler: { name: "Clang", cc: "clang", cxx: "clang++" }
+        include:
+          # Add MSVC for Windows
+          - os: windows-latest
+            compiler: { name: "MSVC", cc: "cl", cxx: "cl" }
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup C++ environment (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+        if [ "${{ matrix.compiler.name }}" = "Clang" ]; then
+          sudo apt-get install -y clang
+        fi
+
+    - name: Setup C++ environment (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake
+        if [ "${{ matrix.compiler.name }}" = "GCC" ]; then
+          brew install gcc
+        fi
+
+    - name: Setup MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Create build directory
+      run: cmake -E make_directory build
+
+    - name: Configure CMake (Unix)
+      if: runner.os != 'Windows'
+      working-directory: build
+      run: |
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
+          -DASYNCLE_BUILD_TESTS=ON
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      working-directory: build
+      run: |
+        cmake .. -DASYNCLE_BUILD_TESTS=ON
+
+    - name: Build
+      working-directory: build
+      run: cmake --build . --config Release
+
+    - name: Run tests
+      working-directory: build
+      run: ctest --output-on-failure --verbose
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup C++ environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format clang-tidy build-essential cmake
+
+    - name: Check code formatting
+      run: |
+        find include tests -name "*.hpp" -o -name "*.cpp" | xargs clang-format --dry-run --Werror
+
+    - name: Static analysis with clang-tidy
+      run: |
+        cmake -B build -DASYNCLE_BUILD_TESTS=ON
+        cmake --build build
+        find include -name "*.hpp" | xargs clang-tidy -p build --warnings-as-errors="*"
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake lcov
+
+    - name: Configure with coverage
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+          -DASYNCLE_BUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run tests
+      run: cd build && ctest --output-on-failure
+
+    - name: Generate coverage report
+      run: |
+        lcov --directory build --capture --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        lcov --remove coverage.info '*/tests/*' --output-file coverage.info
+        lcov --list coverage.info
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.info
+        fail_ci_if_error: true
