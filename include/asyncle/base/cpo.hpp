@@ -54,6 +54,21 @@ struct can_work_t {
     constexpr auto operator()(T& obj, Cmd cmd) const
         -> decltype(obj.can_work(cmd))
     { return obj.can_work(cmd); }
+
+    // Const overloads
+    template<class T, class Cmd>
+    requires ( tag_invocable<can_work_t, const T&, Cmd> )
+    constexpr auto operator()(const T& obj, Cmd cmd) const
+        -> tag_invoke_result_t<can_work_t, const T&, Cmd>
+    { return tag_invoke(*this, obj, cmd); }
+
+    template<class T, class Cmd>
+    requires ( requires(const T& o, Cmd c) {
+                   { o.can_work(c) };
+               } )
+    constexpr auto operator()(const T& obj, Cmd cmd) const
+        -> decltype(obj.can_work(cmd))
+    { return obj.can_work(cmd); }
 };
 
 inline constexpr can_work_t can_work {};
@@ -73,9 +88,23 @@ constexpr auto can_make(T& obj)
     return can_work(obj, get_make_command(obj));
 }
 
+template<class T>
+constexpr auto can_make(const T& obj) 
+    -> decltype(can_work(obj, get_make_command(obj)))
+{
+    return can_work(obj, get_make_command(obj));
+}
+
 // Convenience wrappers that use work with push/take commands
 template<class T>
 constexpr auto can_push(T& obj) 
+    -> decltype(can_work(obj, get_push_command(obj)))
+{
+    return can_work(obj, get_push_command(obj));
+}
+
+template<class T>
+constexpr auto can_push(const T& obj) 
     -> decltype(can_work(obj, get_push_command(obj)))
 {
     return can_work(obj, get_push_command(obj));
@@ -90,6 +119,13 @@ constexpr auto try_push(T& obj, Obj&& o)
 
 template<class T>
 constexpr auto can_take(T& obj) 
+    -> decltype(can_work(obj, get_take_command(obj)))
+{
+    return can_work(obj, get_take_command(obj));
+}
+
+template<class T>
+constexpr auto can_take(const T& obj) 
     -> decltype(can_work(obj, get_take_command(obj)))
 {
     return can_work(obj, get_take_command(obj));
