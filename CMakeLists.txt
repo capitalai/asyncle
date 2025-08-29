@@ -12,7 +12,7 @@ target_include_directories(asyncle INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
 if(ASYNCLE_BUILD_TESTS)
   enable_testing()
   
-  # Concept-specific tests
+  # Core concept tests
   add_executable(test_basic_concepts tests/test_basic_concepts.cpp)
   target_link_libraries(test_basic_concepts PRIVATE asyncle)
   add_test(NAME asyncle.basic_concepts COMMAND test_basic_concepts)
@@ -32,4 +32,21 @@ if(ASYNCLE_BUILD_TESTS)
   add_executable(test_utility_concepts tests/test_utility_concepts.cpp)
   target_link_libraries(test_utility_concepts PRIVATE asyncle)
   add_test(NAME asyncle.utility_concepts COMMAND test_utility_concepts)
+  
+  # New comprehensive tests for enhanced features
+  add_executable(test_entries tests/test_entries.cpp)
+  target_link_libraries(test_entries PRIVATE asyncle)
+  add_test(NAME asyncle.entries COMMAND test_entries)
+  
+  add_executable(test_predicates tests/test_predicates.cpp)
+  target_link_libraries(test_predicates PRIVATE asyncle)
+  add_test(NAME asyncle.predicates COMMAND test_predicates)
+  
+  add_executable(test_command tests/test_command.cpp)
+  target_link_libraries(test_command PRIVATE asyncle)
+  add_test(NAME asyncle.command COMMAND test_command)
+  
+  add_executable(test_cpo tests/test_cpo.cpp)
+  target_link_libraries(test_cpo PRIVATE asyncle)
+  add_test(NAME asyncle.cpo COMMAND test_cpo)
 endif()
