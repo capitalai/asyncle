@@ -11,11 +11,11 @@ namespace test_types {
         asyncle::type_map<TestObj, TestPayload>
     >;
     
-    // Object that properly implements all operations
+    // Object that properly implements all operations using CPO approach
     struct GoodOperator {
         mutable int operation_count = 0;
         
-        // For workable concept
+        // For workable concept - supports both tag_invoke and member function fallback
         asyncle::check_status can_work(test_command) const {
             ++operation_count;
             return asyncle::check_status::TRUE;
@@ -26,47 +26,46 @@ namespace test_types {
             return TestPayload{"processed: " + std::to_string(obj.value)};
         }
         
-        // For makeable concept (uses default commands)
-        asyncle::check_status can_make() const {
-            ++operation_count;
-            return asyncle::check_status::TRUE;
-        }
-        
-        std::expected<TestObj, int> make(TestObj template_obj) const {
+        // For makeable/pushable/takeable - implement work with default commands
+        // These will be called via CPO convenience wrappers
+        TestObj work(asyncle::default_make_command, TestObj template_obj) const {
             ++operation_count;
             return TestObj{template_obj.value + 1};
         }
         
-        // For pushable concept
-        asyncle::check_status can_push() const {
+        asyncle::check_status can_work(asyncle::default_make_command) const {
             ++operation_count;
             return asyncle::check_status::TRUE;
         }
         
-        std::expected<bool, bool> try_push(TestObj) const {
+        std::expected<bool, bool> work(asyncle::default_push_command, TestObj) const {
             ++operation_count;
             return true;
         }
         
-        // For takeable concept
-        asyncle::check_status can_take() const {
+        asyncle::check_status can_work(asyncle::default_push_command) const {
             ++operation_count;
             return asyncle::check_status::TRUE;
         }
         
-        std::expected<bool, bool> try_take(TestObj) const {
+        std::expected<bool, bool> work(asyncle::default_take_command, TestObj) const {
             ++operation_count;
             return true;
+        }
+        
+        asyncle::check_status can_work(asyncle::default_take_command) const {
+            ++operation_count;
+            return asyncle::check_status::TRUE;
         }
     };
     
     // Object that doesn't implement operations properly
     struct BadOperator {
-        // Wrong return types for can_* methods
+        // Wrong return types for can_work method
         void can_work(test_command) const {}
-        void can_make() const {}
-        void can_push() const {}
-        void can_take() const {}
+        void can_work(asyncle::default_make_command) const {}
+        void can_work(asyncle::default_push_command) const {}
+        void can_work(asyncle::default_take_command) const {}
         
         // Missing or wrong work methods
         void work(test_command, TestObj) const {}
@@ -126,31 +125,30 @@ int main() {
     assert(work_result.has_value());
     assert(work_result->data == "processed: 100");
     
-    // Test makeable operations work at runtime (CPO integration pending)
-    // auto can_make_result = asyncle::can_make(good_op);
-    // assert(can_make_result == check_status::TRUE);
+    // Test makeable operations work at runtime via CPO
+    auto can_make_result = asyncle::can_make(good_op);
+    assert(can_make_result == check_status::TRUE);
     
-    // auto make_result = asyncle::make(good_op, obj);
-    // assert(make_result.has_value());
-    // assert(make_result->value == 101);
+    auto make_result = asyncle::make(good_op, obj);
+    assert(make_result.value == 101);
     
-    // Test pushable operations work at runtime (CPO integration pending)
-    // auto can_push_result = asyncle::can_push(good_op);
-    // assert(can_push_result == check_status::TRUE);
+    // Test pushable operations work at runtime via CPO
+    auto can_push_result = asyncle::can_push(good_op);
+    assert(can_push_result == check_status::TRUE);
     
-    // auto push_result = asyncle::try_push(good_op, obj);
-    // assert(push_result.has_value());
-    // assert(*push_result == true);
+    auto push_result = asyncle::try_push(good_op, obj);
+    assert(push_result.has_value());
+    assert(*push_result == true);
     
-    // Test takeable operations work at runtime (CPO integration pending)
-    // auto can_take_result = asyncle::can_take(good_op);
-    // assert(can_take_result == check_status::TRUE);
+    // Test takeable operations work at runtime via CPO
+    auto can_take_result = asyncle::can_take(good_op);
+    assert(can_take_result == check_status::TRUE);
     
-    // auto take_result = asyncle::try_take(good_op, obj);
-    // assert(take_result.has_value());
-    // assert(*take_result == true);
+    auto take_result = asyncle::try_take(good_op, obj);
+    assert(take_result.has_value());
+    assert(*take_result == true);
     
-    std::cout << "All operation concept tests passed! Operations performed: " 
+    std::cout << "All CPO-based operation concept tests passed! Operations performed: " 
               << good_op.operation_count << std::endl;
     
     return 0;
