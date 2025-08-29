@@ -4,6 +4,7 @@
 #include "../meta/entries.hpp"
 #include <concepts>
 #include <expected>
+#include <type_traits>
 
 namespace asyncle {
 
@@ -73,12 +74,16 @@ struct default_make_command {
     static constexpr bool accepts = true;
     
     template <class P>
-    using payload_t = P;
+    using payload_t = std::remove_cvref_t<P>;
     
     template <class P>
     using result_t = std::conditional_t<
         accepts<P>,
-        std::expected<payload_t<P>, error_type>,
+        std::conditional_t<
+            std::same_as<error_type, void>,
+            payload_t<P>,
+            std::expected<payload_t<P>, error_type>
+        >,
         void>;
 };
 
