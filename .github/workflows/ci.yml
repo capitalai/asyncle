@@ -118,7 +118,9 @@ jobs:
     - name: Setup C++ environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-format clang-tidy build-essential cmake
+        sudo apt-get install -y build-essential cmake
+        # Install specific clang-format version for consistency
+        sudo apt-get install -y clang-format-18 clang-tidy
         # Install newer clang for C++23 support
         sudo apt-get install -y clang-18
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
@@ -126,7 +128,8 @@ jobs:
 
     - name: Check code formatting
       run: |
-        find include tests -name "*.hpp" -o -name "*.cpp" | xargs clang-format --dry-run --Werror
+        # Use specific clang-format version for consistency
+        find include tests -name "*.hpp" -o -name "*.cpp" | xargs clang-format-18 --dry-run --Werror
 
     - name: Static analysis with clang-tidy
       run: |

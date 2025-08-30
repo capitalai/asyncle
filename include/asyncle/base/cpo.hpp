@@ -49,8 +49,8 @@ struct can_work_t {
 
     template <class T, class Cmd>
     requires(requires(T& o, Cmd c) {
-        { o.can_work(c) };
-    })
+                { o.can_work(c) };
+            })
     constexpr auto operator()(T& obj, Cmd cmd) const -> decltype(obj.can_work(cmd)) {
         return obj.can_work(cmd);
     }
@@ -64,8 +64,8 @@ struct can_work_t {
 
     template <class T, class Cmd>
     requires(requires(const T& o, Cmd c) {
-        { o.can_work(c) };
-    })
+                { o.can_work(c) };
+            })
     constexpr auto operator()(const T& obj, Cmd cmd) const -> decltype(obj.can_work(cmd)) {
         return obj.can_work(cmd);
     }
