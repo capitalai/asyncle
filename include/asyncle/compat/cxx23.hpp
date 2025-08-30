@@ -12,13 +12,7 @@
 // Check for C++23 features and provide fallbacks
 namespace asyncle::compat {
 
-// std::expected compatibility
-#ifdef __cpp_lib_expected
-#include <expected>
-template <class T, class E = std::exception>
-using expected = std::expected<T, E>;
-#else
-// Simple expected implementation for basic use cases
+// std::expected compatibility - always use our own implementation to avoid conflicts
 template <class T, class E = std::exception>
 class expected {
     private:
@@ -76,22 +70,16 @@ class expected {
 
     constexpr const E&& error() const&& { return std::move(error_); }
 };
-#endif
 
 // std::is_aggregate_v compatibility - use the implementation from type_traits.hpp
 using asyncle::is_aggregate_v;
 
-// std::same_as compatibility
-#ifdef __cpp_lib_concepts
-using std::convertible_to;
-using std::same_as;
-#else
+// std::same_as compatibility - always use our implementations to avoid conflicts
 template <class T, class U>
 concept same_as = std::is_same_v<T, U>;
 
 template <class From, class To>
 concept convertible_to = std::is_convertible_v<From, To>;
-#endif
 
 }  // namespace asyncle::compat
 

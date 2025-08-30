@@ -1,6 +1,6 @@
 #include <asyncle/base/cpo.hpp>
-#include <asyncle/concepts/operation_concepts.hpp>
 #include <asyncle/compat/cxx23.hpp>
+#include <asyncle/concepts/operation_concepts.hpp>
 #include <cassert>
 #include <iostream>
 
@@ -44,7 +44,8 @@ asyncle::check_status tag_invoke(asyncle::can_work_t, TagInvokeObject& obj, test
     return asyncle::check_status::TRUE;
 }
 
-asyncle::compat::expected<TestPayload, TestError> tag_invoke(asyncle::work_t, TagInvokeObject& obj, test_command, TestPayload p) {
+asyncle::compat::expected<TestPayload, TestError>
+  tag_invoke(asyncle::work_t, TagInvokeObject& obj, test_command, TestPayload p) {
     ++obj.call_count;
     return TestPayload { p.value * obj.multiplier };
 }
@@ -72,7 +73,8 @@ asyncle::check_status tag_invoke(asyncle::can_work_t, BothObject& obj, test_comm
     return asyncle::check_status::TRUE;  // Different result
 }
 
-asyncle::compat::expected<TestPayload, TestError> tag_invoke(asyncle::work_t, BothObject& obj, test_command, TestPayload p) {
+asyncle::compat::expected<TestPayload, TestError>
+  tag_invoke(asyncle::work_t, BothObject& obj, test_command, TestPayload p) {
     ++obj.tag_calls;
     return TestPayload { p.value + 200 };  // Different result
 }

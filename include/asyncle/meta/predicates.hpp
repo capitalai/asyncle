@@ -42,7 +42,7 @@ MAKE_TRAIT_PRED(pred_triv_copy, std::is_trivially_copyable);
 template <class T>
 struct pred_range: std::false_type {};
 
-template <class T>  
+template <class T>
 struct pred_range<std::vector<T>>: std::true_type {};
 
 template <>
@@ -51,7 +51,7 @@ struct pred_range<std::string>: std::true_type {};
 template <class T>
 struct pred_sized_range: std::bool_constant<pred_range<T>::value> {};
 
-template <class T>  
+template <class T>
 struct pred_contig_range: std::bool_constant<pred_range<T>::value> {};
 
 template <class T>

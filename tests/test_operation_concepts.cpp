@@ -1,5 +1,5 @@
-#include <asyncle/concepts/operation_concepts.hpp>
 #include <asyncle/compat/cxx23.hpp>
+#include <asyncle/concepts/operation_concepts.hpp>
 #include <cassert>
 #include <iostream>
 
