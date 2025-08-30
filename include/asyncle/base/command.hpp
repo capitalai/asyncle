@@ -1,9 +1,8 @@
 #ifndef ASYNCLE_COMMAND_HPP
 #define ASYNCLE_COMMAND_HPP
 
+#include "../compat/cxx23.hpp"
 #include "../meta/entries.hpp"
-#include <concepts>
-#include <expected>
 #include <type_traits>
 
 namespace asyncle {

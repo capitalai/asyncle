@@ -1,7 +1,7 @@
 #ifndef ASYNCLE_BASIC_CONCEPTS_HPP
 #define ASYNCLE_BASIC_CONCEPTS_HPP
 
-#include <concepts>
+#include "../compat/cxx23.hpp"
 
 namespace asyncle {
 
@@ -15,7 +15,7 @@ template <typename T>
 concept testable = just_value<T, bool>;
 
 template <typename T>
-concept object = std::is_aggregate_v<T>;
+concept object = asyncle::compat::is_aggregate_v<T>;
 
 }  // namespace asyncle
 

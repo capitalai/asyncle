@@ -1,13 +1,14 @@
 #ifndef ASYNCLE_PREDICATES_HPP
 #define ASYNCLE_PREDICATES_HPP
 
-#include <concepts>
+#include "../compat/cxx23.hpp"
 #include <optional>
-#include <ranges>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 namespace asyncle {
 
@@ -21,8 +22,11 @@ namespace asyncle {
     struct NAME: std::bool_constant<TRAIT<std::decay_t<T>>::value> {}
 
 // Common predicates (directly usable with pred_map)
-MAKE_CONCEPT_PRED(pred_integral, std::integral);
-MAKE_CONCEPT_PRED(pred_floating_point, std::floating_point);
+template <class T>
+struct pred_integral: std::bool_constant<std::is_integral_v<std::decay_t<T>>> {};
+
+template <class T>
+struct pred_floating_point: std::bool_constant<std::is_floating_point_v<std::decay_t<T>>> {};
 
 template <class T>
 struct pred_arithmetic: std::bool_constant<pred_integral<T>::value || pred_floating_point<T>::value> {};
@@ -34,11 +38,24 @@ MAKE_TRAIT_PRED(pred_scalar, std::is_scalar);
 MAKE_TRAIT_PRED(pred_trivial, std::is_trivial);
 MAKE_TRAIT_PRED(pred_triv_copy, std::is_trivially_copyable);
 
-// Range predicates
-MAKE_CONCEPT_PRED(pred_range, std::ranges::range);
-MAKE_CONCEPT_PRED(pred_sized_range, std::ranges::sized_range);
-MAKE_CONCEPT_PRED(pred_contig_range, std::ranges::contiguous_range);
-MAKE_CONCEPT_PRED(pred_view, std::ranges::view);
+// Range predicates - simple implementations
+template <class T>
+struct pred_range: std::false_type {};
+
+template <class T>  
+struct pred_range<std::vector<T>>: std::true_type {};
+
+template <>
+struct pred_range<std::string>: std::true_type {};
+
+template <class T>
+struct pred_sized_range: std::bool_constant<pred_range<T>::value> {};
+
+template <class T>  
+struct pred_contig_range: std::bool_constant<pred_range<T>::value> {};
+
+template <class T>
+struct pred_view: std::false_type {};
 
 template <class T>
 struct pred_optional: std::false_type {};
