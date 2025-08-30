@@ -2,6 +2,7 @@
 #include <asyncle/concepts/operation_concepts.hpp>
 #include <cassert>
 #include <iostream>
+#include <string>
 
 namespace test_types {
 struct TestObj {
