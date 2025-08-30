@@ -118,9 +118,9 @@ jobs:
       working-directory: build
       run: |
         # List available tests first for debugging
-        ctest --show-only --config Release
+        ctest --show-only -C Release
         # Run tests with detailed output
-        ctest --output-on-failure --verbose --config Release
+        ctest --output-on-failure --verbose -C Release
 
   code-quality:
     name: Code Quality Checks
