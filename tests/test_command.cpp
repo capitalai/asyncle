@@ -1,4 +1,5 @@
 #include <asyncle/base/command.hpp>
+#include <asyncle/compat/cxx23.hpp>
 #include <string>
 
 namespace test_types {
@@ -33,7 +34,7 @@ struct ObjectWithCommands {
         template <class P>
         using payload_t = bool;
         template <class P>
-        using result_t = std::expected<bool, bool>;
+        using result_t = asyncle::compat::expected<bool, bool>;
     };
 
     using push_command_type = custom_push_command;
@@ -64,13 +65,13 @@ int main() {
     static_assert(std::same_as<test_command::payload_t<double>, PayloadC>);
 
     // Test result_t
-    static_assert(std::same_as<test_command::result_t<int>, std::expected<PayloadA, TestError>>);
-    static_assert(std::same_as<test_command::result_t<std::string>, std::expected<PayloadB, TestError>>);
+    static_assert(std::same_as<test_command::result_t<int>, asyncle::compat::expected<PayloadA, TestError>>);
+    static_assert(std::same_as<test_command::result_t<std::string>, asyncle::compat::expected<PayloadB, TestError>>);
     static_assert(std::same_as<test_command::result_t<float>, void>);  // not accepted
 
     // ========== Test command type utilities ==========
     static_assert(std::same_as<cmd_error_t<test_command>, TestError>);
-    static_assert(std::same_as<cmd_result_t<test_command, int>, std::expected<PayloadA, TestError>>);
+    static_assert(std::same_as<cmd_result_t<test_command, int>, asyncle::compat::expected<PayloadA, TestError>>);
     static_assert(cmd_accepts_v<test_command, int>);
     static_assert(!cmd_accepts_v<test_command, float>);
 
