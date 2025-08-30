@@ -104,13 +104,23 @@ jobs:
         echo "Building project..."
         cmake --build . --config Release
 
-    - name: Run tests
+    - name: Run tests (Unix)
+      if: runner.os != 'Windows'
       working-directory: build
       run: |
         # List available tests first for debugging
         ctest --show-only || true
         # Run tests with detailed output
         ctest --output-on-failure --verbose
+
+    - name: Run tests (Windows)
+      if: runner.os == 'Windows'
+      working-directory: build
+      run: |
+        # List available tests first for debugging
+        ctest --show-only --config Release
+        # Run tests with detailed output
+        ctest --output-on-failure --verbose --config Release
 
   code-quality:
     name: Code Quality Checks
