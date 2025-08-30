@@ -1,9 +1,9 @@
 #ifndef ASYNCLE_COMPAT_RANGES_HPP
 #define ASYNCLE_COMPAT_RANGES_HPP
 
+#include "../compat/concepts.hpp"
 #include <iterator>
 #include <type_traits>
-#include "../compat/concepts.hpp"
 
 namespace asyncle {
 
@@ -14,35 +14,35 @@ namespace ranges = std::ranges;
 #else
 // Basic ranges implementation
 namespace ranges {
-    template <class T>
-    concept range = requires(T& t) {
-        std::begin(t);
-        std::end(t);
-    };
+template <class T>
+concept range = requires(T& t) {
+    std::begin(t);
+    std::end(t);
+};
 
-    template <class T>
-    concept sized_range = range<T> && requires(T& t) {
-        { std::size(t) } -> convertible_to<std::size_t>;
-    };
+template <class T>
+concept sized_range = range<T> && requires(T& t) {
+    { std::size(t) } -> convertible_to<std::size_t>;
+};
 
-    template <class T>
-    concept contiguous_range = range<T> && requires(T& t) {
-        { std::data(t) } -> convertible_to<const std::remove_reference_t<decltype(*std::begin(t))>*>;
-    };
+template <class T>
+concept contiguous_range = range<T> && requires(T& t) {
+    { std::data(t) } -> convertible_to<const std::remove_reference_t<decltype(*std::begin(t))>*>;
+};
 
-    template <class T>
-    concept view = range<T> && std::is_move_constructible_v<T> && std::is_default_constructible_v<T>;
+template <class T>
+concept view = range<T> && std::is_move_constructible_v<T> && std::is_default_constructible_v<T>;
 
-    template <class R>
-    using range_value_t = std::remove_reference_t<decltype(*std::begin(std::declval<R&>()))>;
-}
+template <class R>
+using range_value_t = std::remove_reference_t<decltype(*std::begin(std::declval<R&>()))>;
+}  // namespace ranges
 
 // Import into std namespace
 namespace std::ranges {
-    using namespace asyncle::ranges;
-}
+using namespace asyncle::ranges;
+}  // namespace std::ranges
 #endif
 
-} // namespace asyncle
+}  // namespace asyncle
 
 #endif
