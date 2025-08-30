@@ -15,10 +15,11 @@ namespace asyncle::compat {
 // std::expected compatibility
 #ifdef __cpp_lib_expected
 #include <expected>
-using std::expected;
+template <class T, class E = std::exception>
+using expected = std::expected<T, E>;
 #else
 // Simple expected implementation for basic use cases
-template <class T, class E>
+template <class T, class E = std::exception>
 class expected {
     private:
     union {
@@ -94,15 +95,6 @@ concept convertible_to = std::is_convertible_v<From, To>;
 
 }  // namespace asyncle::compat
 
-// Bring compatibility types into std namespace if needed
-namespace std {
-#ifndef __cpp_lib_expected
-using asyncle::compat::expected;
-#endif
-#ifndef __cpp_lib_concepts
-using asyncle::compat::convertible_to;
-using asyncle::compat::same_as;
-#endif
-}  // namespace std
+// Don't import into std namespace to avoid conflicts with native implementations
 
 #endif

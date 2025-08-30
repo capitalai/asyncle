@@ -18,7 +18,7 @@ struct command {
     using payload_t = typename first_match<P, Entries...>::type;
 
     template <class P>
-    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
+    using result_t = std::conditional_t<accepts<P>, asyncle::compat::expected<payload_t<P>, error_type>, void>;
 };
 
 template <class Cmd>
@@ -69,7 +69,7 @@ struct default_make_command {
     template <class P>
     using result_t = std::conditional_t<
       accepts<P>,
-      std::conditional_t<std::same_as<error_type, void>, payload_t<P>, std::expected<payload_t<P>, error_type>>,
+      std::conditional_t<std::same_as<error_type, void>, payload_t<P>, asyncle::compat::expected<payload_t<P>, error_type>>,
       void>;
 };
 
@@ -83,7 +83,7 @@ struct default_push_command {
     using payload_t = bool;  // true = successfully pushed
 
     template <class P>
-    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
+    using result_t = std::conditional_t<accepts<P>, asyncle::compat::expected<payload_t<P>, error_type>, void>;
 };
 
 struct default_take_command {
@@ -96,7 +96,7 @@ struct default_take_command {
     using payload_t = bool;  // true = successfully took
 
     template <class P>
-    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
+    using result_t = std::conditional_t<accepts<P>, asyncle::compat::expected<payload_t<P>, error_type>, void>;
 };
 
 // Get command types for an object (either its own or default) using SFINAE
