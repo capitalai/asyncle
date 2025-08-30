@@ -3,34 +3,43 @@
 
 struct WithValueType {
     using value_type = int;
+
     bool has_value() const { return true; }
+
     int value() const { return 42; }
 };
 
 struct WithoutValueType {
     bool has_value() const { return true; }
+
     int value() const { return 42; }
 };
 
 struct WithValueTypeNoHasValue {
     using value_type = int;
+
     int value() const { return 42; }
 };
 
 struct WithValueTypeBadHasValue {
     using value_type = int;
+
     void has_value() const {}
+
     int value() const { return 42; }
 };
 
 struct WithValueTypeNoValue {
     using value_type = int;
+
     bool has_value() const { return true; }
 };
 
 struct WithValueTypeBadValue {
     using value_type = int;
+
     bool has_value() const { return true; }
+
     void value() const {}
 };
 

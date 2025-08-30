@@ -1,12 +1,12 @@
 #include <asyncle/concepts/basic_concepts.hpp>
 
 struct TestStruct {
-    int x;
+    int    x;
     double y;
 };
 
 class TestClass {
-public:
+    public:
     int value;
 };
 
@@ -34,7 +34,7 @@ int main() {
 
     // Test object concept
     static_assert(asyncle::object<TestStruct>);
-    static_assert(asyncle::object<TestClass>); // TestClass is actually aggregate
+    static_assert(asyncle::object<TestClass>);  // TestClass is actually aggregate
     static_assert(!asyncle::object<int>);
 
     return 0;

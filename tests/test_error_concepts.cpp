@@ -4,40 +4,51 @@ enum class ErrorCode { SUCCESS, FAILURE, TIMEOUT };
 
 struct WithErrorType {
     using error_type = ErrorCode;
+
     bool has_error() const { return true; }
+
     ErrorCode error() const { return ErrorCode::SUCCESS; }
 };
 
 struct WithoutErrorType {
     bool has_error() const { return true; }
+
     int error() const { return 0; }
 };
 
 struct WithNonEnumErrorType {
     using error_type = int;
+
     bool has_error() const { return true; }
+
     int error() const { return 0; }
 };
 
 struct WithErrorTypeNoHasError {
     using error_type = ErrorCode;
+
     ErrorCode error() const { return ErrorCode::SUCCESS; }
 };
 
 struct WithErrorTypeBadHasError {
     using error_type = ErrorCode;
+
     void has_error() const {}
+
     ErrorCode error() const { return ErrorCode::SUCCESS; }
 };
 
 struct WithErrorTypeNoError {
     using error_type = ErrorCode;
+
     bool has_error() const { return true; }
 };
 
 struct WithErrorTypeBadError {
     using error_type = ErrorCode;
+
     bool has_error() const { return true; }
+
     void error() const {}
 };
 
