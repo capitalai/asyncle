@@ -3,11 +3,31 @@ project(asyncle VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Enforce strict compiler version requirements for C++23
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.0")
+        message(FATAL_ERROR "GCC version must be at least 12.0 for C++23 support. Current version: ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "17.0")
+        message(FATAL_ERROR "Clang version must be at least 17.0 for C++23 support. Current version: ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.35")
+        message(FATAL_ERROR "MSVC version must be at least 19.35 (Visual Studio 2022 17.5) for C++23 support. Current version: ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+else()
+    message(WARNING "Unknown compiler ${CMAKE_CXX_COMPILER_ID}. C++23 support may be incomplete.")
+endif()
 
 option(ASYNCLE_BUILD_TESTS "Build Asyncle tests" ON)
 
 add_library(asyncle INTERFACE)
 target_include_directories(asyncle INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# Add compile features to ensure proper C++23 support
+target_compile_features(asyncle INTERFACE cxx_std_23)
 
 if(ASYNCLE_BUILD_TESTS)
   enable_testing()

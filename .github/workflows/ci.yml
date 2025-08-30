@@ -28,9 +28,9 @@ jobs:
           # Add MSVC for Windows
           - os: windows-latest
             compiler: { name: "MSVC", cc: "cl", cxx: "cl" }
-          # Use specific GCC version for macOS
+          # Use latest GCC version for macOS
           - os: macos-latest
-            compiler: { name: "GCC", cc: "gcc-13", cxx: "g++-13" }
+            compiler: { name: "GCC", cc: "gcc-14", cxx: "g++-14" }
 
     steps:
     - name: Checkout code
@@ -42,15 +42,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake
         if [ "${{ matrix.compiler.name }}" = "Clang" ]; then
-          # Install newer clang for C++23 support
+          # Install newer clang for C++23 support  
           sudo apt-get install -y clang-18
           sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
           sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
         else
-          # Ensure we have a newer GCC for C++23
-          sudo apt-get install -y gcc-12 g++-12
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
+          # Ensure we have newer GCC for better C++23 support
+          sudo apt-get install -y gcc-13 g++-13
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
         fi
 
     - name: Setup C++ environment (macOS)
@@ -60,11 +60,13 @@ jobs:
         brew uninstall --ignore-dependencies cmake || true
         brew install cmake
         if [ "${{ matrix.compiler.name }}" = "GCC" ]; then
-          # Install recent GCC for C++23 support
-          brew install gcc@13
+          # Install latest GCC for better C++23 support
+          brew install gcc@14 || brew install gcc@13
         else
-          # macOS clang should be recent enough, but let's update Xcode tools
+          # Ensure we have recent Xcode tools for Clang C++23 support
           sudo xcode-select --install || true
+          # Check Clang version
+          clang++ --version
         fi
 
     - name: Setup MSVC (Windows)
@@ -80,6 +82,9 @@ jobs:
       run: |
         echo "Configuring with compiler: ${{ matrix.compiler.name }}"
         echo "CC: ${{ matrix.compiler.cc }}, CXX: ${{ matrix.compiler.cxx }}"
+        # Check compiler versions before configuring
+        ${{ matrix.compiler.cc }} --version || echo "CC version check failed"
+        ${{ matrix.compiler.cxx }} --version || echo "CXX version check failed"
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
@@ -151,10 +156,10 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential cmake lcov
-        # Install newer GCC for C++23 support
-        sudo apt-get install -y gcc-12 g++-12
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
+        # Install newer GCC for better C++23 support
+        sudo apt-get install -y gcc-13 g++-13
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
 
     - name: Configure with coverage
       run: |
