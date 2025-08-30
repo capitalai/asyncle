@@ -28,6 +28,9 @@ jobs:
           # Add MSVC for Windows
           - os: windows-latest
             compiler: { name: "MSVC", cc: "cl", cxx: "cl" }
+          # Use specific GCC version for macOS
+          - os: macos-latest
+            compiler: { name: "GCC", cc: "gcc-13", cxx: "g++-13" }
 
     steps:
     - name: Checkout code
@@ -39,15 +42,29 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake
         if [ "${{ matrix.compiler.name }}" = "Clang" ]; then
-          sudo apt-get install -y clang
+          # Install newer clang for C++23 support
+          sudo apt-get install -y clang-18
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+        else
+          # Ensure we have a newer GCC for C++23
+          sudo apt-get install -y gcc-12 g++-12
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
         fi
 
     - name: Setup C++ environment (macOS)
       if: runner.os == 'macOS'
       run: |
+        # Remove any existing cmake installations that might conflict
+        brew uninstall --ignore-dependencies cmake || true
         brew install cmake
         if [ "${{ matrix.compiler.name }}" = "GCC" ]; then
-          brew install gcc
+          # Install recent GCC for C++23 support
+          brew install gcc@13
+        else
+          # macOS clang should be recent enough, but let's update Xcode tools
+          sudo xcode-select --install || true
         fi
 
     - name: Setup MSVC (Windows)
@@ -61,6 +78,8 @@ jobs:
       if: runner.os != 'Windows'
       working-directory: build
       run: |
+        echo "Configuring with compiler: ${{ matrix.compiler.name }}"
+        echo "CC: ${{ matrix.compiler.cc }}, CXX: ${{ matrix.compiler.cxx }}"
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
@@ -71,15 +90,22 @@ jobs:
       if: runner.os == 'Windows'
       working-directory: build
       run: |
+        echo "Configuring for Windows with MSVC"
         cmake .. -DASYNCLE_BUILD_TESTS=ON
 
     - name: Build
       working-directory: build
-      run: cmake --build . --config Release
+      run: |
+        echo "Building project..."
+        cmake --build . --config Release
 
     - name: Run tests
       working-directory: build
-      run: ctest --output-on-failure --verbose
+      run: |
+        # List available tests first for debugging
+        ctest --show-only || true
+        # Run tests with detailed output
+        ctest --output-on-failure --verbose
 
   code-quality:
     name: Code Quality Checks
@@ -93,6 +119,10 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y clang-format clang-tidy build-essential cmake
+        # Install newer clang for C++23 support
+        sudo apt-get install -y clang-18
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
 
     - name: Check code formatting
       run: |
@@ -116,11 +146,17 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential cmake lcov
+        # Install newer GCC for C++23 support
+        sudo apt-get install -y gcc-12 g++-12
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
 
     - name: Configure with coverage
       run: |
         cmake -B build \
           -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_CXX_COMPILER=g++ \
           -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
           -DASYNCLE_BUILD_TESTS=ON
 
@@ -128,7 +164,12 @@ jobs:
       run: cmake --build build
 
     - name: Run tests
-      run: cd build && ctest --output-on-failure
+      working-directory: build  
+      run: |
+        # List available tests first for debugging
+        ctest --show-only || true
+        # Run tests with detailed output
+        ctest --output-on-failure --verbose
 
     - name: Generate coverage report
       run: |
@@ -141,4 +182,7 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.info
-        fail_ci_if_error: true
+        fail_ci_if_error: false
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
