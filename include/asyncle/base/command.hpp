@@ -19,10 +19,7 @@ struct command {
     using payload_t = typename first_match<P, Entries...>::type;
 
     template <class P>
-    using result_t = std::conditional_t<
-        accepts<P>,
-        std::expected<payload_t<P>, error_type>,
-        void>;
+    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
 };
 
 template <class Cmd>
@@ -43,19 +40,13 @@ concept is_command = requires {
 
 // Helper to get command types from an object type
 template <class T>
-concept has_make_command = requires {
-    typename T::make_command_type;
-};
+concept has_make_command = requires { typename T::make_command_type; };
 
 template <class T>
-concept has_push_command = requires {
-    typename T::push_command_type;
-};
+concept has_push_command = requires { typename T::push_command_type; };
 
 template <class T>
-concept has_take_command = requires {
-    typename T::take_command_type;
-};
+concept has_take_command = requires { typename T::take_command_type; };
 
 template <class T>
 using make_command_t = typename T::make_command_type;
@@ -69,54 +60,44 @@ using take_command_t = typename T::take_command_type;
 // Default commands for objects that don't define their own
 struct default_make_command {
     using error_type = void;
-    
+
     template <class P>
     static constexpr bool accepts = true;
-    
+
     template <class P>
     using payload_t = std::remove_cvref_t<P>;
-    
+
     template <class P>
     using result_t = std::conditional_t<
-        accepts<P>,
-        std::conditional_t<
-            std::same_as<error_type, void>,
-            payload_t<P>,
-            std::expected<payload_t<P>, error_type>
-        >,
-        void>;
+      accepts<P>,
+      std::conditional_t<std::same_as<error_type, void>, payload_t<P>, std::expected<payload_t<P>, error_type>>,
+      void>;
 };
 
 struct default_push_command {
-    using error_type = bool; // false = failed to push
-    
+    using error_type = bool;  // false = failed to push
+
     template <class P>
     static constexpr bool accepts = true;
-    
+
     template <class P>
-    using payload_t = bool; // true = successfully pushed
-    
+    using payload_t = bool;  // true = successfully pushed
+
     template <class P>
-    using result_t = std::conditional_t<
-        accepts<P>,
-        std::expected<payload_t<P>, error_type>,
-        void>;
+    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
 };
 
 struct default_take_command {
-    using error_type = bool; // false = failed to take
-    
+    using error_type = bool;  // false = failed to take
+
     template <class P>
     static constexpr bool accepts = true;
-    
+
     template <class P>
-    using payload_t = bool; // true = successfully took
-    
+    using payload_t = bool;  // true = successfully took
+
     template <class P>
-    using result_t = std::conditional_t<
-        accepts<P>,
-        std::expected<payload_t<P>, error_type>,
-        void>;
+    using result_t = std::conditional_t<accepts<P>, std::expected<payload_t<P>, error_type>, void>;
 };
 
 // Get command types for an object (either its own or default) using SFINAE
@@ -125,7 +106,8 @@ struct get_make_command_impl {
     using type = default_make_command;
 };
 
-template <class T> requires has_make_command<T>
+template <class T>
+requires has_make_command<T>
 struct get_make_command_impl<T> {
     using type = make_command_t<T>;
 };
@@ -138,7 +120,8 @@ struct get_push_command_impl {
     using type = default_push_command;
 };
 
-template <class T> requires has_push_command<T>
+template <class T>
+requires has_push_command<T>
 struct get_push_command_impl<T> {
     using type = push_command_t<T>;
 };
@@ -151,7 +134,8 @@ struct get_take_command_impl {
     using type = default_take_command;
 };
 
-template <class T> requires has_take_command<T>
+template <class T>
+requires has_take_command<T>
 struct get_take_command_impl<T> {
     using type = take_command_t<T>;
 };

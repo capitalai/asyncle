@@ -1,8 +1,8 @@
 #ifndef ASYNCLE_UTILITY_CONCEPTS_HPP
 #define ASYNCLE_UTILITY_CONCEPTS_HPP
 
-#include "basic_concepts.hpp"
 #include "../base/cpo.hpp"
+#include "basic_concepts.hpp"
 
 namespace asyncle {
 

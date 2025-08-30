@@ -16,8 +16,7 @@ concept result = testable<T> && can_get_value<U>;
 // CPO-based workable concept
 template <typename T, typename Cmd, typename Para>
 concept workable =
-  object<Cmd> && is_command<Cmd> && object<Para> && cmd_accepts_v<Cmd, Para> && 
-  requires(T& t, Cmd cmd, Para&& para) {
+  object<Cmd> && is_command<Cmd> && object<Para> && cmd_accepts_v<Cmd, Para> && requires(T& t, Cmd cmd, Para&& para) {
       { asyncle::can_work(t, cmd) } -> checkable;
       { asyncle::work(t, cmd, std::forward<Para>(para)) } -> std::same_as<cmd_result_t<Cmd, Para>>;
   };
