@@ -1,4 +1,4 @@
-#include <asyncle/compat/cxx23.hpp>
+#include <asyncle/compat/expected.hpp>
 #include <asyncle/concepts/operation_concepts.hpp>
 #include <cassert>
 #include <iostream>
@@ -29,7 +29,7 @@ struct GoodOperator {
         return asyncle::check_status::TRUE;
     }
 
-    asyncle::compat::expected<TestPayload, TestError> work(test_command, TestObj obj) const {
+    asyncle::expected<TestPayload, TestError> work(test_command, TestObj obj) const {
         ++operation_count;
         return TestPayload { "processed: " + std::to_string(obj.value) };
     }
@@ -46,7 +46,7 @@ struct GoodOperator {
         return asyncle::check_status::TRUE;
     }
 
-    asyncle::compat::expected<bool, bool> work(asyncle::default_push_command, TestObj) const {
+    asyncle::expected<bool, bool> work(asyncle::default_push_command, TestObj) const {
         ++operation_count;
         return true;
     }
@@ -56,7 +56,7 @@ struct GoodOperator {
         return asyncle::check_status::TRUE;
     }
 
-    asyncle::compat::expected<bool, bool> work(asyncle::default_take_command, TestObj) const {
+    asyncle::expected<bool, bool> work(asyncle::default_take_command, TestObj) const {
         ++operation_count;
         return true;
     }

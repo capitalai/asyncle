@@ -135,17 +135,6 @@ class expected {
 
 }  // namespace asyncle
 
-// Import std::expected if available, otherwise use our implementation
-#ifdef __cpp_lib_expected
-#include <expected>
-
-namespace asyncle {
-using std::expected;
-}  // namespace asyncle
-#else
-namespace std {
-using asyncle::expected;
-}  // namespace std
-#endif
+// Note: Always use our own implementation to avoid cross-platform conflicts
 
 #endif
