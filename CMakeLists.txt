@@ -34,6 +34,11 @@ add_library(platform_mmap STATIC src/platform/mmap_linux.cpp)
 target_include_directories(platform_mmap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(platform_mmap PUBLIC cxx_std_23)
 
+# Cross-platform file library - compiled implementation
+add_library(platform_file STATIC src/platform/file_linux.cpp)
+target_include_directories(platform_file PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(platform_file PUBLIC cxx_std_23)
+
 if(ASYNCLE_BUILD_TESTS)
   enable_testing()
   
@@ -79,4 +84,9 @@ if(ASYNCLE_BUILD_TESTS)
   add_executable(test_platform_mmap tests/test_platform_mmap.cpp)
   target_link_libraries(test_platform_mmap PRIVATE platform_mmap)
   add_test(NAME platform.mmap COMMAND test_platform_mmap)
+  
+  # Cross-platform file library test
+  add_executable(test_platform_file tests/test_platform_file.cpp)
+  target_link_libraries(test_platform_file PRIVATE platform_file)
+  add_test(NAME platform.file COMMAND test_platform_file)
 endif()

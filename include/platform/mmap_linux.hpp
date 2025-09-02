@@ -3,6 +3,7 @@
 
 #include "mmap.hpp"
 
+
 // Platform-specific includes
 #ifdef __linux__
 #include <cstring>
@@ -13,6 +14,10 @@
 #include <unistd.h>
 
 namespace platform::mmap::linux_impl {
+
+// Import expected types for cleaner usage
+using cxx23_compat::expected;
+using cxx23_compat::unexpect;
 
 // Linux-specific implementation details
 namespace detail {
@@ -120,13 +125,13 @@ std::size_t get_page_size() noexcept {
 }
 
 // Apply memory advice using madvise
-cxx23_compat::expected<void, memory_error> apply_madvise(void* addr, std::size_t length, int advice) noexcept {
-    if(::madvise(addr, length, advice) == 0) { return cxx23_compat::expected<void, memory_error>(); }
-    return cxx23_compat::expected<void, memory_error>(cxx23_compat::unexpect, make_system_error(errno));
+expected<void, memory_error> apply_madvise(void* addr, std::size_t length, int advice) noexcept {
+    if(::madvise(addr, length, advice) == 0) { return expected<void, memory_error>(); }
+    return expected<void, memory_error>(unexpect, make_system_error(errno));
 }
 
 // Apply memory locking
-cxx23_compat::expected<void, memory_error> apply_mlock(void* addr, std::size_t length, locking_strategy strategy) noexcept {
+expected<void, memory_error> apply_mlock(void* addr, std::size_t length, locking_strategy strategy) noexcept {
     int result = -1;
 
     switch(strategy) {
@@ -135,17 +140,17 @@ cxx23_compat::expected<void, memory_error> apply_mlock(void* addr, std::size_t l
 #ifdef MLOCK_ONFAULT
         result = ::mlock2(addr, length, MLOCK_ONFAULT);
 #else
-        return cxx23_compat::expected<void, memory_error>(
-          cxx23_compat::unexpect,
+        return expected<void, memory_error>(
+          unexpect,
           memory_error(error_domain::feature, error_code::lock_on_fault_unavailable));
 #endif
         break;
     case locking_strategy::no_lock:
-    default                       : return cxx23_compat::expected<void, memory_error>();
+    default                       : return expected<void, memory_error>();
     }
 
-    if(result == 0) { return cxx23_compat::expected<void, memory_error>(); }
-    return cxx23_compat::expected<void, memory_error>(cxx23_compat::unexpect, make_system_error(errno));
+    if(result == 0) { return expected<void, memory_error>(); }
+    return expected<void, memory_error>(unexpect, make_system_error(errno));
 }
 
 // Query large page sizes
@@ -173,19 +178,19 @@ void query_large_page_sizes(memory_caps& caps) noexcept {
 
 // Linux implementation of cross-platform mmap interface
 
-inline cxx23_compat::expected<memory_region, memory_error>
+inline expected<memory_region, memory_error>
   map_memory_impl(int file_descriptor, const memory_request& request) noexcept {
     // Validate parameters
     if(request.length == 0) {
-        return cxx23_compat::expected<memory_region, memory_error>(
-          cxx23_compat::unexpect,
+        return expected<memory_region, memory_error>(
+          unexpect,
           memory_error(error_code::invalid_argument));
     }
 
     // Ensure file offset is page-aligned
     if(request.offset % detail::get_page_size() != 0) {
-        return cxx23_compat::expected<memory_region, memory_error>(
-          cxx23_compat::unexpect,
+        return expected<memory_region, memory_error>(
+          unexpect,
           memory_error(error_code::invalid_argument));
     }
 
@@ -207,7 +212,7 @@ inline cxx23_compat::expected<memory_region, memory_error>
       static_cast<off_t>(request.offset));
 
     if(mapped_addr == MAP_FAILED) {
-        return cxx23_compat::expected<memory_region, memory_error>(cxx23_compat::unexpect, detail::make_system_error(errno));
+        return expected<memory_region, memory_error>(unexpect, detail::make_system_error(errno));
     }
 
     // Create region descriptor
@@ -271,24 +276,24 @@ inline cxx23_compat::expected<memory_region, memory_error>
     // Cleanup on error
     if(cleanup_needed) {
         ::munmap(mapped_addr, request.length);
-        return cxx23_compat::expected<memory_region, memory_error>(cxx23_compat::unexpect, error);
+        return expected<memory_region, memory_error>(unexpect, error);
     }
 
-    return cxx23_compat::expected<memory_region, memory_error>(region);
+    return expected<memory_region, memory_error>(region);
 }
 
-inline cxx23_compat::expected<void, memory_error>
+inline expected<void, memory_error>
   sync_memory_impl(const memory_region& region, bool invalidate_caches) noexcept {
     if(!region.supports_sync || region.file_descriptor < 0) {
-        return cxx23_compat::expected<void, memory_error>(cxx23_compat::unexpect, memory_error(error_code::no_such_device));
+        return expected<void, memory_error>(unexpect, memory_error(error_code::no_such_device));
     }
 
     int flags = MS_SYNC;
     if(invalidate_caches) { flags |= MS_INVALIDATE; }
 
-    if(::msync(region.address, region.length, flags) == 0) { return cxx23_compat::expected<void, memory_error>(); }
+    if(::msync(region.address, region.length, flags) == 0) { return expected<void, memory_error>(); }
 
-    return cxx23_compat::expected<void, memory_error>(cxx23_compat::unexpect, detail::make_system_error(errno));
+    return expected<void, memory_error>(unexpect, detail::make_system_error(errno));
 }
 
 inline void unmap_memory_impl(const memory_region& region) noexcept {
@@ -331,7 +336,7 @@ inline memory_caps query_capabilities_impl() noexcept {
     return caps;
 }
 
-inline cxx23_compat::expected<void, memory_error>
+inline expected<void, memory_error>
   advise_memory_impl(const memory_region& region, access_pattern pattern) noexcept {
     int advice = MADV_NORMAL;
 
@@ -345,25 +350,25 @@ inline cxx23_compat::expected<void, memory_error>
     return detail::apply_madvise(region.address, region.length, advice);
 }
 
-inline cxx23_compat::expected<void, memory_error>
+inline expected<void, memory_error>
   lock_memory_impl(const memory_region& region, locking_strategy strategy) noexcept {
     return detail::apply_mlock(region.address, region.length, strategy);
 }
 
-inline cxx23_compat::expected<void, memory_error> unlock_memory_impl(const memory_region& region) noexcept {
-    if(::munlock(region.address, region.length) == 0) { return cxx23_compat::expected<void, memory_error>(); }
+inline expected<void, memory_error> unlock_memory_impl(const memory_region& region) noexcept {
+    if(::munlock(region.address, region.length) == 0) { return expected<void, memory_error>(); }
 
-    return cxx23_compat::expected<void, memory_error>(cxx23_compat::unexpect, detail::make_system_error(errno));
+    return expected<void, memory_error>(unexpect, detail::make_system_error(errno));
 }
 
-inline cxx23_compat::expected<void, memory_error>
+inline expected<void, memory_error>
   prefetch_memory_impl(const memory_region& region, std::size_t offset, std::size_t length) noexcept {
     void*       addr = static_cast<char*>(region.address) + offset;
     std::size_t size = (length == 0) ? (region.length - offset) : length;
 
     if(offset >= region.length || offset + size > region.length) {
-        return cxx23_compat::expected<void, memory_error>(
-          cxx23_compat::unexpect,
+        return expected<void, memory_error>(
+          unexpect,
           memory_error(error_code::invalid_argument));
     }
 
