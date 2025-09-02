@@ -134,6 +134,10 @@ file_caps query_file_caps() noexcept {
 
 namespace platform::file {
 
+// Import expected types for cleaner usage
+using cxx23_compat::expected;
+using cxx23_compat::unexpect;
+
 // Stub implementations for non-Linux platforms
 expected<file_handle, file_error>
 open_file(const char* path, const file_request& request) noexcept {

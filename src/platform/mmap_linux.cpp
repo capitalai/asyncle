@@ -57,6 +57,10 @@ prefetch_memory(const memory_region& region, std::size_t offset, std::size_t len
 // Stub implementation for non-Linux platforms
 namespace platform::mmap {
 
+// Import expected types for cleaner usage
+using cxx23_compat::expected;
+using cxx23_compat::unexpect;
+
 expected<memory_region, memory_error>
 map_memory(int file_descriptor, const memory_request& request) noexcept {
     return expected<memory_region, memory_error>(
