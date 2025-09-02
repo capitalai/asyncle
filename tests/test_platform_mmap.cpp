@@ -105,7 +105,7 @@ int main() {
 #else
         const char* filename = "/tmp/test_platform_mmap.dat";
 #endif
-        FILE*       file     = fopen(filename, "w+b");
+        FILE* file = fopen(filename, "w+b");
         if(!file) {
             std::cout << "Failed to create test file\n";
             return 1;

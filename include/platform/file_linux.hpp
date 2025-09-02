@@ -502,4 +502,3 @@ inline file_caps query_file_caps_impl() noexcept {
 #endif  // __linux__
 
 #endif  // PLATFORM_FILE_LINUX_HPP
-

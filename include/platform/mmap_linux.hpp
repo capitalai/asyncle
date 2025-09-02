@@ -3,7 +3,6 @@
 
 #include "mmap.hpp"
 
-
 // Platform-specific includes
 #ifdef __linux__
 #include <cstring>
@@ -178,20 +177,15 @@ void query_large_page_sizes(memory_caps& caps) noexcept {
 
 // Linux implementation of cross-platform mmap interface
 
-inline expected<memory_region, memory_error>
-  map_memory_impl(int file_descriptor, const memory_request& request) noexcept {
+inline expected<memory_region, memory_error> map_memory_impl(int file_descriptor, const memory_request& request) noexcept {
     // Validate parameters
     if(request.length == 0) {
-        return expected<memory_region, memory_error>(
-          unexpect,
-          memory_error(error_code::invalid_argument));
+        return expected<memory_region, memory_error>(unexpect, memory_error(error_code::invalid_argument));
     }
 
     // Ensure file offset is page-aligned
     if(request.offset % detail::get_page_size() != 0) {
-        return expected<memory_region, memory_error>(
-          unexpect,
-          memory_error(error_code::invalid_argument));
+        return expected<memory_region, memory_error>(unexpect, memory_error(error_code::invalid_argument));
     }
 
     // Convert parameters to system calls
@@ -282,8 +276,7 @@ inline expected<memory_region, memory_error>
     return expected<memory_region, memory_error>(region);
 }
 
-inline expected<void, memory_error>
-  sync_memory_impl(const memory_region& region, bool invalidate_caches) noexcept {
+inline expected<void, memory_error> sync_memory_impl(const memory_region& region, bool invalidate_caches) noexcept {
     if(!region.supports_sync || region.file_descriptor < 0) {
         return expected<void, memory_error>(unexpect, memory_error(error_code::no_such_device));
     }
@@ -336,8 +329,7 @@ inline memory_caps query_capabilities_impl() noexcept {
     return caps;
 }
 
-inline expected<void, memory_error>
-  advise_memory_impl(const memory_region& region, access_pattern pattern) noexcept {
+inline expected<void, memory_error> advise_memory_impl(const memory_region& region, access_pattern pattern) noexcept {
     int advice = MADV_NORMAL;
 
     switch(pattern) {
@@ -350,8 +342,7 @@ inline expected<void, memory_error>
     return detail::apply_madvise(region.address, region.length, advice);
 }
 
-inline expected<void, memory_error>
-  lock_memory_impl(const memory_region& region, locking_strategy strategy) noexcept {
+inline expected<void, memory_error> lock_memory_impl(const memory_region& region, locking_strategy strategy) noexcept {
     return detail::apply_mlock(region.address, region.length, strategy);
 }
 
@@ -367,9 +358,7 @@ inline expected<void, memory_error>
     std::size_t size = (length == 0) ? (region.length - offset) : length;
 
     if(offset >= region.length || offset + size > region.length) {
-        return expected<void, memory_error>(
-          unexpect,
-          memory_error(error_code::invalid_argument));
+        return expected<void, memory_error>(unexpect, memory_error(error_code::invalid_argument));
     }
 
     return detail::apply_madvise(addr, size, MADV_WILLNEED);

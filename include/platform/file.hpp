@@ -312,4 +312,3 @@ file_caps query_file_caps() noexcept;
 }  // namespace platform::file
 
 #endif
-
