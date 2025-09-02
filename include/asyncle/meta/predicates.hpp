@@ -1,8 +1,9 @@
 #ifndef ASYNCLE_PREDICATES_HPP
 #define ASYNCLE_PREDICATES_HPP
 
-#include "../compat/cxx23.hpp"
+#include <concepts>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>

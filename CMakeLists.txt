@@ -29,11 +29,10 @@ target_include_directories(asyncle INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
 # Add compile features to ensure proper C++23 support
 target_compile_features(asyncle INTERFACE cxx_std_23)
 
-# L0 I/O library - compiled implementation
-add_library(asyncle_io STATIC src/io/l0_linux.cpp)
-target_include_directories(asyncle_io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_features(asyncle_io PUBLIC cxx_std_23)
-target_link_libraries(asyncle_io PUBLIC asyncle)
+# Cross-platform mmap library - compiled implementation
+add_library(platform_mmap STATIC src/platform/mmap_linux.cpp)
+target_include_directories(platform_mmap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(platform_mmap PUBLIC cxx_std_23)
 
 if(ASYNCLE_BUILD_TESTS)
   enable_testing()
@@ -76,8 +75,8 @@ if(ASYNCLE_BUILD_TESTS)
   target_link_libraries(test_cpo PRIVATE asyncle)
   add_test(NAME asyncle.cpo COMMAND test_cpo)
   
-  # L0 I/O interface test
-  add_executable(test_l0_io tests/test_l0_io.cpp)
-  target_link_libraries(test_l0_io PRIVATE asyncle_io)
-  add_test(NAME asyncle.l0_io COMMAND test_l0_io)
+  # Cross-platform mmap library test
+  add_executable(test_platform_mmap tests/test_platform_mmap.cpp)
+  target_link_libraries(test_platform_mmap PRIVATE platform_mmap)
+  add_test(NAME platform.mmap COMMAND test_platform_mmap)
 endif()

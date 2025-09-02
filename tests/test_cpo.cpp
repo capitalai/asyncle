@@ -1,5 +1,5 @@
 #include <asyncle/base/cpo.hpp>
-#include <asyncle/compat/expected.hpp>
+#include <asyncle/compat.hpp>
 #include <asyncle/concepts/operation_concepts.hpp>
 #include <cassert>
 #include <iostream>

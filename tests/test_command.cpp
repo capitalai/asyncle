@@ -1,4 +1,5 @@
 #include <asyncle/base/command.hpp>
+#include <asyncle/compat.hpp>
 #include <string>
 
 namespace test_types {
