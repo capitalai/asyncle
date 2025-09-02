@@ -89,4 +89,9 @@ if(ASYNCLE_BUILD_TESTS)
   add_executable(test_platform_file tests/test_platform_file.cpp)
   target_link_libraries(test_platform_file PRIVATE platform_file)
   add_test(NAME platform.file COMMAND test_platform_file)
+  
+  # Asyncle I/O modules test
+  add_executable(test_asyncle_io tests/test_asyncle_io.cpp)
+  target_link_libraries(test_asyncle_io PRIVATE asyncle platform_file platform_mmap)
+  add_test(NAME asyncle.io COMMAND test_asyncle_io)
 endif()
