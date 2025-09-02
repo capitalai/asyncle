@@ -7,6 +7,10 @@
 
 namespace platform::mmap {
 
+// Import expected types for cleaner usage
+using cxx23_compat::expected;
+using cxx23_compat::unexpect;
+
 // Forward declarations
 struct memory_region;
 struct memory_caps;
@@ -249,11 +253,11 @@ struct memory_caps {
 // These are implemented by platform-specific modules
 
 // Map a region of memory according to the request
-cxx23_compat::expected<memory_region, memory_error>
+expected<memory_region, memory_error>
   map_memory(int file_descriptor, const memory_request& request) noexcept;
 
 // Synchronize a mapped region to storage
-cxx23_compat::expected<void, memory_error>
+expected<void, memory_error>
   sync_memory(const memory_region& region, bool invalidate_caches = false) noexcept;
 
 // Unmap a previously mapped region
@@ -263,15 +267,15 @@ void unmap_memory(const memory_region& region) noexcept;
 memory_caps query_capabilities() noexcept;
 
 // Apply memory advice/hints to a region
-cxx23_compat::expected<void, memory_error> advise_memory(const memory_region& region, access_pattern pattern) noexcept;
+expected<void, memory_error> advise_memory(const memory_region& region, access_pattern pattern) noexcept;
 
 // Lock/unlock memory region
-cxx23_compat::expected<void, memory_error> lock_memory(const memory_region& region, locking_strategy strategy) noexcept;
+expected<void, memory_error> lock_memory(const memory_region& region, locking_strategy strategy) noexcept;
 
-cxx23_compat::expected<void, memory_error> unlock_memory(const memory_region& region) noexcept;
+expected<void, memory_error> unlock_memory(const memory_region& region) noexcept;
 
 // Prefetch memory region
-cxx23_compat::expected<void, memory_error>
+expected<void, memory_error>
   prefetch_memory(const memory_region& region, std::size_t offset = 0, std::size_t length = 0) noexcept;
 
 }  // namespace platform::mmap

@@ -12,6 +12,7 @@ namespace asyncle::io {
 // Import platform types for mmap (avoid conflicts with file module)
 using platform::mmap::access_pattern;
 using platform::mmap::backing_type;
+using platform::mmap::expected;
 using platform::mmap::locking_strategy;
 using platform::mmap::memory_caps;
 using platform::mmap::memory_error;
@@ -19,6 +20,7 @@ using platform::mmap::memory_region;
 using platform::mmap::memory_request;
 using platform::mmap::placement_strategy;
 using platform::mmap::sharing_mode;
+using platform::mmap::unexpect;
 
 // Use explicit namespace for mmap-specific types
 namespace mmap_access = platform::mmap;
@@ -99,24 +101,24 @@ class mmap {
     ~mmap() { unmap(); }
 
     // Core operations
-    cxx23_compat::expected<memory_region, memory_error> map(const memory_request& request, int fd = -1) noexcept {
+    expected<memory_region, memory_error> map(const memory_request& request, int fd = -1) noexcept {
         unmap();
         auto result = platform::mmap::map_memory(fd, request);
         if(result) { region_ = result.value(); }
         return result;
     }
 
-    cxx23_compat::expected<memory_region, memory_error> map(const file& f, const memory_request& request) noexcept {
+    expected<memory_region, memory_error> map(const file& f, const memory_request& request) noexcept {
         if(!f.is_open()) { 
-            return cxx23_compat::expected<memory_region, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<memory_region, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
         return map(request, f.fd());
     }
 
-    cxx23_compat::expected<memory_region, memory_error> map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
+    expected<memory_region, memory_error> map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
         memory_request req {};
         req.length  = length;
         req.backing = backing_type::anonymous;
@@ -125,10 +127,10 @@ class mmap {
         return map(req, -1);
     }
 
-    cxx23_compat::expected<memory_region, memory_error> map_file(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
+    expected<memory_region, memory_error> map_file(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
         if(!f.is_open()) { 
-            return cxx23_compat::expected<memory_region, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<memory_region, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
@@ -150,10 +152,10 @@ class mmap {
     }
 
     // Memory synchronization
-    cxx23_compat::expected<void, memory_error> sync(bool invalidate_caches = false) noexcept {
+    expected<void, memory_error> sync(bool invalidate_caches = false) noexcept {
         if(!is_mapped()) { 
-            return cxx23_compat::expected<void, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<void, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
@@ -161,10 +163,10 @@ class mmap {
     }
 
     // Memory advice
-    cxx23_compat::expected<void, memory_error> advise(access_pattern pattern) noexcept {
+    expected<void, memory_error> advise(access_pattern pattern) noexcept {
         if(!is_mapped()) { 
-            return cxx23_compat::expected<void, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<void, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
@@ -172,20 +174,20 @@ class mmap {
     }
 
     // Memory locking
-    cxx23_compat::expected<void, memory_error> lock(locking_strategy strategy = locking_strategy::lock_resident) noexcept {
+    expected<void, memory_error> lock(locking_strategy strategy = locking_strategy::lock_resident) noexcept {
         if(!is_mapped()) { 
-            return cxx23_compat::expected<void, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<void, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
         return platform::mmap::lock_memory(region_, strategy);
     }
 
-    cxx23_compat::expected<void, memory_error> unlock() noexcept {
+    expected<void, memory_error> unlock() noexcept {
         if(!is_mapped()) { 
-            return cxx23_compat::expected<void, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<void, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
@@ -193,10 +195,10 @@ class mmap {
     }
 
     // Memory prefetch
-    cxx23_compat::expected<void, memory_error> prefetch(size_t offset = 0, size_t length = 0) noexcept {
+    expected<void, memory_error> prefetch(size_t offset = 0, size_t length = 0) noexcept {
         if(!is_mapped()) { 
-            return cxx23_compat::expected<void, memory_error>(
-                cxx23_compat::unexpect, 
+            return expected<void, memory_error>(
+                unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
         }
