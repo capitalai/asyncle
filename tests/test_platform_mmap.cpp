@@ -3,7 +3,9 @@
 #include <cstring>
 #include <iostream>
 #include <platform/mmap.hpp>
+#ifdef __unix__
 #include <unistd.h>
+#endif
 
 using namespace platform::mmap;
 
@@ -152,7 +154,11 @@ int main() {
         }
 
         fclose(file);
+#ifdef __unix__
         unlink(filename);
+#else
+        std::remove(filename);
+#endif
     }
 
     // Test memory locking if supported
