@@ -99,9 +99,13 @@ int main() {
     {
         std::cout << "\nTesting file-backed mapping...\n";
 
-        // Create a temporary file
+        // Create a temporary file using a cross-platform approach
+#ifdef _WIN32
+        const char* filename = "test_platform_mmap.dat";
+#else
         const char* filename = "/tmp/test_platform_mmap.dat";
-        FILE*       file     = fopen(filename, "w+");
+#endif
+        FILE*       file     = fopen(filename, "w+b");
         if(!file) {
             std::cout << "Failed to create test file\n";
             return 1;
@@ -112,7 +116,11 @@ int main() {
         fwrite(test_data, 1, strlen(test_data), file);
         fflush(file);
 
+#ifdef _WIN32
+        int fd = _fileno(file);
+#else
         int fd = fileno(file);
+#endif
 
         memory_request request;
         request.length  = 4096;  // One page (larger than file for testing)
