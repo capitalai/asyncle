@@ -5,6 +5,10 @@
 #include <type_traits>
 #include <utility>
 
+// Helper types for expected
+struct unexpect_t { explicit unexpect_t() = default; };
+inline constexpr unexpect_t unexpect{};
+
 namespace asyncle {
 
 // Compatibility implementation of std::expected for platforms that don't have it
@@ -34,15 +38,9 @@ class expected {
     template <class... Args>
     constexpr expected(std::in_place_t, Args&&... args): value_(std::forward<Args>(args)...), has_value_(true) {}
 
-    template <class U>
-    constexpr expected(const E& error)
-    requires std::is_constructible_v<E, const U&>
-        : error_(error), has_value_(false) {}
+    constexpr expected(unexpect_t, const E& error): error_(error), has_value_(false) {}
 
-    template <class U>
-    constexpr expected(E&& error)
-    requires std::is_constructible_v<E, U&&>
-        : error_(std::move(error)), has_value_(false) {}
+    constexpr expected(unexpect_t, E&& error): error_(std::move(error)), has_value_(false) {}
 
     // Destructor
     constexpr ~expected() {
@@ -131,6 +129,88 @@ class expected {
     constexpr T* operator->() { return &value_; }
 
     constexpr const T* operator->() const { return &value_; }
+};
+
+// Specialization for expected<void, E>
+template <class E>
+class expected<void, E> {
+    private:
+    union {
+        E error_;
+    };
+    
+    bool has_value_ = true;
+    
+    public:
+    using value_type = void;
+    using error_type = E;
+    
+    // Constructors
+    constexpr expected() noexcept: has_value_(true) {}
+    
+    constexpr expected(unexpect_t, const E& error): error_(error), has_value_(false) {}
+    
+    constexpr expected(unexpect_t, E&& error): error_(std::move(error)), has_value_(false) {}
+    
+    // Destructor
+    constexpr ~expected() {
+        if(!has_value_) {
+            error_.~E();
+        }
+    }
+    
+    // Copy/move constructors and assignment operators
+    constexpr expected(const expected& other): has_value_(other.has_value_) {
+        if(!has_value_) {
+            new(&error_) E(other.error_);
+        }
+    }
+    
+    constexpr expected(expected&& other) noexcept: has_value_(other.has_value_) {
+        if(!has_value_) {
+            new(&error_) E(std::move(other.error_));
+        }
+    }
+    
+    constexpr expected& operator=(const expected& other) {
+        if(this != &other) {
+            this->~expected();
+            new(this) expected(other);
+        }
+        return *this;
+    }
+    
+    constexpr expected& operator=(expected&& other) noexcept {
+        if(this != &other) {
+            this->~expected();
+            new(this) expected(std::move(other));
+        }
+        return *this;
+    }
+    
+    // Observers
+    constexpr bool has_value() const noexcept { return has_value_; }
+    
+    constexpr explicit operator bool() const noexcept { return has_value_; }
+    
+    constexpr void value() const& {
+        if(!has_value_) throw std::runtime_error("bad expected access");
+    }
+    
+    constexpr void value() && {
+        if(!has_value_) throw std::runtime_error("bad expected access");
+    }
+    
+    constexpr E& error() & { return error_; }
+    
+    constexpr const E& error() const& { return error_; }
+    
+    constexpr E&& error() && { return std::move(error_); }
+    
+    constexpr const E&& error() const&& { return std::move(error_); }
+    
+    // Void-specific operators
+    constexpr void operator*() const noexcept {}
 };
 
 }  // namespace asyncle
