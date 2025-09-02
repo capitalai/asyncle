@@ -47,28 +47,24 @@ enum class error_code : uint16_t {
 
 // Flattened error structure - 4 bytes total
 struct memory_error {
-    error_domain domain;
-    error_code   code;
-    uint8_t      platform_errno;  // Original platform error if applicable
-    uint8_t      reserved;
+    error_domain domain;           // 1 byte
+    uint8_t      platform_errno;   // 1 byte - Original platform error if applicable
+    error_code   code;             // 2 bytes
 
     constexpr memory_error() noexcept:
         domain(error_domain::system),
-        code(error_code::success),
         platform_errno(0),
-        reserved(0) {}
+        code(error_code::success) {}
 
     constexpr memory_error(error_code c) noexcept:
         domain(error_domain::system),
-        code(c),
         platform_errno(0),
-        reserved(0) {}
+        code(c) {}
 
     constexpr memory_error(error_domain d, error_code c, uint8_t errno_val = 0) noexcept:
         domain(d),
-        code(c),
         platform_errno(errno_val),
-        reserved(0) {}
+        code(c) {}
 
     constexpr bool is_success() const noexcept { return code == error_code::success; }
 
