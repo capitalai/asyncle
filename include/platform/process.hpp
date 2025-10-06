@@ -205,13 +205,4 @@ process_caps query_process_caps() noexcept;
 
 }  // namespace platform::process
 
-// Include platform-specific implementation
-#if defined(__linux__)
-#include "process_linux.hpp"
-#elif defined(_WIN32)
-#include "process_windows.hpp"
-#else
-#error "Unsupported platform"
-#endif
-
 #endif  // PLATFORM_PROCESS_HPP
