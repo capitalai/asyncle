@@ -26,11 +26,8 @@ using platform::mmap::unexpect;
 // Use explicit namespace for mmap-specific types
 namespace mmap_access = platform::mmap;
 
-// Standardized result types for mmap operations
-template <typename T>
-using mmap_result = result<T, memory_error>;
-
-using mmap_void_result = void_result<memory_error>;
+// Result type aliases are now defined in result.hpp
+// and reference platform::mmap::result directly
 
 // Single RAII mmap class with full capabilities
 class mmap {
@@ -38,7 +35,7 @@ class mmap {
     // Type aliases for result types and error handling
     using error_type = memory_error;
     template <typename T>
-    using result_type = mmap_result<T>;
+    using result_type      = mmap_result<T>;
     using void_result_type = mmap_void_result;
 
     private:
@@ -74,7 +71,11 @@ class mmap {
     }
 
     // Map file with simple parameters
-    mmap(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
+    mmap(
+      const file&              f,
+      size_t                   length,
+      size_t                   offset = 0,
+      mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
         if(f.is_open()) {
             memory_request req {};
             req.length  = length;
@@ -123,16 +124,14 @@ class mmap {
     }
 
     mmap_result<memory_region> map(const file& f, const memory_request& request) noexcept {
-        if(!f.is_open()) { 
-            return mmap_result<memory_region>(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
+        if(!f.is_open()) {
+            return mmap_result<memory_region>(unexpect, memory_error(mmap_access::error_code::invalid_argument));
         }
         return map(request, f.fd());
     }
 
-    mmap_result<memory_region> map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
+    mmap_result<memory_region>
+      map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
         memory_request req {};
         req.length  = length;
         req.backing = backing_type::anonymous;
@@ -141,12 +140,13 @@ class mmap {
         return map(req, -1);
     }
 
-    mmap_result<memory_region> map_file(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
-        if(!f.is_open()) { 
-            return mmap_result<memory_region>(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
+    mmap_result<memory_region> map_file(
+      const file&              f,
+      size_t                   length,
+      size_t                   offset = 0,
+      mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
+        if(!f.is_open()) {
+            return mmap_result<memory_region>(unexpect, memory_error(mmap_access::error_code::invalid_argument));
         }
 
         memory_request req {};
@@ -167,58 +167,32 @@ class mmap {
 
     // Memory synchronization
     mmap_void_result sync(bool invalidate_caches = false) noexcept {
-        if(!is_mapped()) { 
-            return mmap_void_result(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
-        }
+        if(!is_mapped()) { return mmap_void_result(unexpect, memory_error(mmap_access::error_code::invalid_argument)); }
         return platform::mmap::sync_memory(region_, invalidate_caches);
     }
 
     // Memory advice
     mmap_void_result advise(access_pattern pattern) noexcept {
-        if(!is_mapped()) { 
-            return mmap_void_result(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
-        }
+        if(!is_mapped()) { return mmap_void_result(unexpect, memory_error(mmap_access::error_code::invalid_argument)); }
         return platform::mmap::advise_memory(region_, pattern);
     }
 
     // Memory locking
     mmap_void_result lock(locking_strategy strategy = locking_strategy::lock_resident) noexcept {
-        if(!is_mapped()) { 
-            return mmap_void_result(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
-        }
+        if(!is_mapped()) { return mmap_void_result(unexpect, memory_error(mmap_access::error_code::invalid_argument)); }
         return platform::mmap::lock_memory(region_, strategy);
     }
 
     mmap_void_result unlock() noexcept {
-        if(!is_mapped()) { 
-            return mmap_void_result(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
-        }
+        if(!is_mapped()) { return mmap_void_result(unexpect, memory_error(mmap_access::error_code::invalid_argument)); }
         return platform::mmap::unlock_memory(region_);
     }
 
     // Memory prefetch
     mmap_void_result prefetch(size_t offset = 0, size_t length = 0) noexcept {
-        if(!is_mapped()) { 
-            return mmap_void_result(
-                unexpect, 
-                memory_error(mmap_access::error_code::invalid_argument)
-            ); 
-        }
+        if(!is_mapped()) { return mmap_void_result(unexpect, memory_error(mmap_access::error_code::invalid_argument)); }
         return platform::mmap::prefetch_memory(region_, offset, length);
     }
-
 
     // Static utilities
     static memory_caps capabilities() noexcept { return platform::mmap::query_capabilities(); }
@@ -234,12 +208,18 @@ class mmap {
     }
 
     // Accessors
-    void*                   data() noexcept { return region_.address; }
-    const void*             data() const noexcept { return region_.address; }
-    size_t                  size() const noexcept { return region_.length; }
-    const memory_region&    region() const noexcept { return region_; }
-    memory_region&          region() noexcept { return region_; }
-    bool                    is_mapped() const noexcept { return region_.address != nullptr; }
+    void* data() noexcept { return region_.address; }
+
+    const void* data() const noexcept { return region_.address; }
+
+    size_t size() const noexcept { return region_.length; }
+
+    const memory_region& region() const noexcept { return region_; }
+
+    memory_region& region() noexcept { return region_; }
+
+    bool is_mapped() const noexcept { return region_.address != nullptr; }
+
     explicit operator bool() const noexcept { return is_mapped(); }
 
     // Access as typed pointer
@@ -268,10 +248,14 @@ class mmap {
 
     // Info accessors
     bool is_file_backed() const noexcept { return region_.file_descriptor >= 0; }
+
     bool is_anonymous() const noexcept { return region_.file_descriptor < 0; }
+
     bool is_locked() const noexcept { return region_.is_locked; }
+
     bool supports_sync() const noexcept { return region_.supports_sync; }
-    int  fd() const noexcept { return region_.file_descriptor; }
+
+    int fd() const noexcept { return region_.file_descriptor; }
 };
 
 }  // namespace asyncle::io

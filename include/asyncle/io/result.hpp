@@ -1,26 +1,34 @@
 #ifndef ASYNCLE_IO_RESULT_HPP
 #define ASYNCLE_IO_RESULT_HPP
 
-#include "../../cxx23_compat/expected.hpp"
+#include "../../platform/file.hpp"
+#include "../../platform/mmap.hpp"
+#include "../../platform/process.hpp"
 
 namespace asyncle::io {
 
-// Import expected types
+// Import expected types from cxx23_compat
 using cxx23_compat::expected;
 using cxx23_compat::unexpect;
 using cxx23_compat::unexpect_t;
 
-// Common result type template for I/O operations
-// Provides a standardized way to express expected<T, Error> results
-template <typename T, typename Error>
-using result = expected<T, Error>;
+// Result type aliases that reference platform layer result types
+// This provides a unified interface while reusing platform definitions
 
-// Void result type for operations that return no value on success
-template <typename Error>
-using void_result = expected<void, Error>;
+// File result types - reference platform::file::result
+template <typename T>
+using file_result      = platform::file::result<T>;
+using file_void_result = platform::file::void_result;
 
-// Result type helpers for convenience
-// These allow writing: file_result<size_t> instead of expected<size_t, file_error>
+// Memory mapping result types - reference platform::mmap::result
+template <typename T>
+using mmap_result      = platform::mmap::result<T>;
+using mmap_void_result = platform::mmap::void_result;
+
+// Process result types - reference platform::process::result
+template <typename T>
+using process_result      = platform::process::result<T>;
+using process_void_result = platform::process::void_result;
 
 }  // namespace asyncle::io
 

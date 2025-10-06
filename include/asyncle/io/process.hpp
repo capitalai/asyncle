@@ -25,11 +25,8 @@ using platform::process::spawn_flags;
 using platform::process::spawn_request;
 using platform::process::unexpect;
 
-// Standardized result types for process operations
-template <typename T>
-using process_result = result<T, process_error>;
-
-using process_void_result = void_result<process_error>;
+// Result type aliases are now defined in result.hpp
+// and reference platform::process::result directly
 
 // Single RAII process class with full capabilities
 class process {
@@ -37,7 +34,7 @@ class process {
     // Type aliases for result types and error handling
     using error_type = process_error;
     template <typename T>
-    using result_type = process_result<T>;
+    using result_type      = process_result<T>;
     using void_result_type = process_void_result;
 
     private:
@@ -63,8 +60,12 @@ class process {
     }
 
     // Simple spawn with executable path and args
-    process(const char* executable, const char* const* args, pipe_mode stdin_mode = pipe_mode::pipe,
-            pipe_mode stdout_mode = pipe_mode::pipe, pipe_mode stderr_mode = pipe_mode::pipe) noexcept {
+    process(
+      const char*        executable,
+      const char* const* args,
+      pipe_mode          stdin_mode  = pipe_mode::pipe,
+      pipe_mode          stdout_mode = pipe_mode::pipe,
+      pipe_mode          stderr_mode = pipe_mode::pipe) noexcept {
         spawn_request req {};
         req.executable  = executable;
         req.args        = args;
@@ -83,13 +84,18 @@ class process {
     }
 
     // Create from existing handles
-    process(process_handle h, pipe_handle in, pipe_handle out, pipe_handle err) noexcept
-        : handle_(h), stdin_(in), stdout_(out), stderr_(err) {}
+    process(process_handle h, pipe_handle in, pipe_handle out, pipe_handle err) noexcept:
+        handle_(h),
+        stdin_(in),
+        stdout_(out),
+        stderr_(err) {}
 
     // Move semantics
-    process(process&& other) noexcept
-        : handle_(std::exchange(other.handle_, process_handle {})), stdin_(std::exchange(other.stdin_, pipe_handle {})),
-          stdout_(std::exchange(other.stdout_, pipe_handle {})), stderr_(std::exchange(other.stderr_, pipe_handle {})) {}
+    process(process&& other) noexcept:
+        handle_(std::exchange(other.handle_, process_handle {})),
+        stdin_(std::exchange(other.stdin_, pipe_handle {})),
+        stdout_(std::exchange(other.stdout_, pipe_handle {})),
+        stderr_(std::exchange(other.stderr_, pipe_handle {})) {}
 
     process& operator=(process&& other) noexcept {
         if(this != &other) {
@@ -123,10 +129,12 @@ class process {
         return result;
     }
 
-    process_result<process_handle> spawn(const char* executable, const char* const* args,
-                                                    pipe_mode stdin_mode  = pipe_mode::pipe,
-                                                    pipe_mode stdout_mode = pipe_mode::pipe,
-                                                    pipe_mode stderr_mode = pipe_mode::pipe) noexcept {
+    process_result<process_handle> spawn(
+      const char*        executable,
+      const char* const* args,
+      pipe_mode          stdin_mode  = pipe_mode::pipe,
+      pipe_mode          stdout_mode = pipe_mode::pipe,
+      pipe_mode          stderr_mode = pipe_mode::pipe) noexcept {
         spawn_request req {};
         req.executable  = executable;
         req.args        = args;
@@ -176,8 +184,8 @@ class process {
 
     process_result<size_t> write_stdin(const void* buffer, size_t length) noexcept {
         io_request req {};
-        req.buffer = const_cast<void*>(buffer);
-        req.length = length;
+        req.buffer  = const_cast<void*>(buffer);
+        req.length  = length;
         auto result = write_stdin(req);
         if(result) { return process_result<size_t>(result.value().bytes_transferred); }
         return process_result<size_t>(unexpect, result.error());
@@ -192,8 +200,8 @@ class process {
 
     process_result<size_t> read_stdout(void* buffer, size_t length) noexcept {
         io_request req {};
-        req.buffer = buffer;
-        req.length = length;
+        req.buffer  = buffer;
+        req.length  = length;
         auto result = read_stdout(req);
         if(result) { return process_result<size_t>(result.value().bytes_transferred); }
         return process_result<size_t>(unexpect, result.error());
@@ -208,8 +216,8 @@ class process {
 
     process_result<size_t> read_stderr(void* buffer, size_t length) noexcept {
         io_request req {};
-        req.buffer = buffer;
-        req.length = length;
+        req.buffer  = buffer;
+        req.length  = length;
         auto result = read_stderr(req);
         if(result) { return process_result<size_t>(result.value().bytes_transferred); }
         return process_result<size_t>(unexpect, result.error());
@@ -242,18 +250,27 @@ class process {
 
     // Accessors
     const process_handle& handle() const noexcept { return handle_; }
-    process_handle&       handle() noexcept { return handle_; }
-    bool                  is_running() const noexcept { return handle_.is_valid(); }
+
+    process_handle& handle() noexcept { return handle_; }
+
+    bool is_running() const noexcept { return handle_.is_valid(); }
+
     explicit operator bool() const noexcept { return is_running(); }
+
     int pid() const noexcept { return handle_.pid; }
+
     int exit_code() const noexcept { return handle_.exit_code; }
 
     const pipe_handle& stdin_pipe() const noexcept { return stdin_; }
+
     const pipe_handle& stdout_pipe() const noexcept { return stdout_; }
+
     const pipe_handle& stderr_pipe() const noexcept { return stderr_; }
 
     bool has_stdin() const noexcept { return stdin_.is_valid(); }
+
     bool has_stdout() const noexcept { return stdout_.is_valid(); }
+
     bool has_stderr() const noexcept { return stderr_.is_valid(); }
 };
 

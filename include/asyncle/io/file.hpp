@@ -31,11 +31,8 @@ using platform::file::seek_origin;
 using platform::file::sync_flags;
 using platform::file::unexpect;
 
-// Standardized result types for file operations
-template <typename T>
-using file_result = result<T, file_error>;
-
-using file_void_result = void_result<file_error>;
+// Result type aliases are now defined in result.hpp
+// and reference platform::file::result directly
 
 // Single RAII file class with full capabilities
 class file {
@@ -43,7 +40,7 @@ class file {
     // Type aliases for result types and error handling
     using error_type = file_error;
     template <typename T>
-    using result_type = file_result<T>;
+    using result_type      = file_result<T>;
     using void_result_type = file_void_result;
 
     private:
@@ -62,7 +59,7 @@ class file {
     // Open file with simple mode
     file(const char* path, access_mode mode = access_mode::read_only) noexcept {
         file_request req {};
-        req.access = mode;
+        req.access  = mode;
         auto result = platform::file::open_file(path, req);
         if(result) { handle_ = result.value(); }
     }
@@ -124,9 +121,9 @@ class file {
 
     file_result<size_t> read(void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) const noexcept {
         io_request req {};
-        req.buffer = buffer;
-        req.length = length;
-        req.offset = offset;
+        req.buffer  = buffer;
+        req.length  = length;
+        req.offset  = offset;
         auto result = read(req);
         if(result) { return file_result<size_t>(result.value().bytes_transferred); }
         return file_result<size_t>(unexpect, result.error());
@@ -139,9 +136,9 @@ class file {
 
     file_result<size_t> write(const void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) noexcept {
         io_request req {};
-        req.buffer = const_cast<void*>(buffer);
-        req.length = length;
-        req.offset = offset;
+        req.buffer  = const_cast<void*>(buffer);
+        req.length  = length;
+        req.offset  = offset;
         auto result = write(req);
         if(result) { return file_result<size_t>(result.value().bytes_transferred); }
         return file_result<size_t>(unexpect, result.error());
@@ -214,7 +211,8 @@ class file {
     }
 
     // Zero-copy operations
-    file_result<size_t> splice_to(file& out, uint64_t* in_offset, uint64_t* out_offset, size_t length, uint32_t flags = 0) noexcept {
+    file_result<size_t>
+      splice_to(file& out, uint64_t* in_offset, uint64_t* out_offset, size_t length, uint32_t flags = 0) noexcept {
         if(!is_open() || !out.is_open()) {
             return file_result<size_t>(unexpect, file_error(error_code::invalid_argument));
         }
@@ -248,9 +246,13 @@ class file {
 
     // Accessors
     const file_handle& handle() const noexcept { return handle_; }
-    file_handle&       handle() noexcept { return handle_; }
-    bool               is_open() const noexcept { return handle_.is_valid(); }
+
+    file_handle& handle() noexcept { return handle_; }
+
+    bool is_open() const noexcept { return handle_.is_valid(); }
+
     explicit operator bool() const noexcept { return is_open(); }
+
     int fd() const noexcept { return handle_.fd; }
 };
 
