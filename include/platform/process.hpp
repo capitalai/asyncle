@@ -29,21 +29,21 @@ enum class error_domain : uint8_t {
 };
 
 enum class error_code : uint16_t {
-    success           = 0,
-    io_error          = 1,
-    invalid_argument  = 2,
-    no_memory         = 3,
-    permission_denied = 4,
-    not_found         = 5,
-    already_exists    = 6,
+    success            = 0,
+    io_error           = 1,
+    invalid_argument   = 2,
+    no_memory          = 3,
+    permission_denied  = 4,
+    not_found          = 5,
+    already_exists     = 6,
     too_many_processes = 7,
-    would_block       = 8,
-    interrupted       = 9,
-    broken_pipe       = 10,
-    process_not_found = 11,
+    would_block        = 8,
+    interrupted        = 9,
+    broken_pipe        = 10,
+    process_not_found  = 11,
     process_terminated = 12,
-    not_supported     = 200,
-    platform_specific = 201
+    not_supported      = 200,
+    platform_specific  = 201
 };
 
 // Flattened error structure (4 bytes)
@@ -56,7 +56,10 @@ struct process_error {
 
     constexpr process_error(error_code c) noexcept: domain(error_domain::system), platform_errno(0), code(c) {}
 
-    constexpr process_error(error_domain d, error_code c, uint8_t e = 0) noexcept: domain(d), platform_errno(e), code(c) {}
+    constexpr process_error(error_domain d, error_code c, uint8_t e = 0) noexcept:
+        domain(d),
+        platform_errno(e),
+        code(c) {}
 };
 
 // Result type templates for consistent error handling
@@ -67,9 +70,9 @@ using void_result = expected<void, process_error>;
 
 // Pipe modes
 enum class pipe_mode : uint8_t {
-    none      = 0,  // No pipe (inherit from parent or redirect to /dev/null)
-    pipe      = 1,  // Create pipe for bidirectional communication
-    inherit   = 2   // Inherit from parent process
+    none    = 0,  // No pipe (inherit from parent or redirect to /dev/null)
+    pipe    = 1,  // Create pipe for bidirectional communication
+    inherit = 2   // Inherit from parent process
 };
 
 // Process creation flags
@@ -112,32 +115,44 @@ struct process_handle {
 
 // Process spawn request (96 bytes - aligned)
 struct spawn_request {
-    const char* executable;           // Path to executable
-    const char* const* args;          // Argument array (NULL-terminated)
-    const char* const* env;           // Environment array (NULL-terminated, nullptr = inherit)
-    const char* working_dir;          // Working directory (nullptr = inherit)
-    pipe_mode   stdin_mode;           // stdin pipe configuration
-    pipe_mode   stdout_mode;          // stdout pipe configuration
-    pipe_mode   stderr_mode;          // stderr pipe configuration
-    uint8_t     _padding[5];          // Padding for alignment
-    spawn_flags flags;                // Creation flags
-    uint32_t    _reserved[16];        // Reserved for future use
+    const char*        executable;     // Path to executable
+    const char* const* args;           // Argument array (NULL-terminated)
+    const char* const* env;            // Environment array (NULL-terminated, nullptr = inherit)
+    const char*        working_dir;    // Working directory (nullptr = inherit)
+    pipe_mode          stdin_mode;     // stdin pipe configuration
+    pipe_mode          stdout_mode;    // stdout pipe configuration
+    pipe_mode          stderr_mode;    // stderr pipe configuration
+    uint8_t            _padding[5];    // Padding for alignment
+    spawn_flags        flags;          // Creation flags
+    uint32_t           _reserved[16];  // Reserved for future use
 
-    constexpr spawn_request() noexcept
-        : executable(nullptr), args(nullptr), env(nullptr), working_dir(nullptr), stdin_mode(pipe_mode::inherit),
-          stdout_mode(pipe_mode::inherit), stderr_mode(pipe_mode::inherit), _padding {}, flags(spawn_flags::none),
-          _reserved {} {}
+    constexpr spawn_request() noexcept:
+        executable(nullptr),
+        args(nullptr),
+        env(nullptr),
+        working_dir(nullptr),
+        stdin_mode(pipe_mode::inherit),
+        stdout_mode(pipe_mode::inherit),
+        stderr_mode(pipe_mode::inherit),
+        _padding {},
+        flags(spawn_flags::none),
+        _reserved {} {}
 };
 
 // I/O request structure (32 bytes - same as file module)
 struct io_request {
-    void*    buffer;   // Buffer pointer
-    size_t   length;   // Number of bytes to transfer
-    uint64_t timeout;  // Timeout in milliseconds (0 = non-blocking, -1 = infinite)
-    uint32_t flags;    // Operation flags
-    uint32_t _padding; // Padding for alignment
+    void*    buffer;    // Buffer pointer
+    size_t   length;    // Number of bytes to transfer
+    uint64_t timeout;   // Timeout in milliseconds (0 = non-blocking, -1 = infinite)
+    uint32_t flags;     // Operation flags
+    uint32_t _padding;  // Padding for alignment
 
-    constexpr io_request() noexcept: buffer(nullptr), length(0), timeout(static_cast<uint64_t>(-1)), flags(0), _padding(0) {}
+    constexpr io_request() noexcept:
+        buffer(nullptr),
+        length(0),
+        timeout(static_cast<uint64_t>(-1)),
+        flags(0),
+        _padding(0) {}
 };
 
 // I/O result structure (16 bytes - same as file module)
@@ -151,20 +166,26 @@ struct io_result {
 
 // Platform capabilities (16 bytes)
 struct process_caps {
-    bool supports_pipes;           // Platform supports pipe creation
-    bool supports_detach;          // Platform supports process detachment
-    bool supports_process_groups;  // Platform supports process groups
-    bool supports_search_path;     // Platform supports PATH search
-    uint8_t  _padding[12];         // Reserved for future capabilities
+    bool    supports_pipes;           // Platform supports pipe creation
+    bool    supports_detach;          // Platform supports process detachment
+    bool    supports_process_groups;  // Platform supports process groups
+    bool    supports_search_path;     // Platform supports PATH search
+    uint8_t _padding[12];             // Reserved for future capabilities
 
-    constexpr process_caps() noexcept
-        : supports_pipes(false), supports_detach(false), supports_process_groups(false), supports_search_path(false),
-          _padding {} {}
+    constexpr process_caps() noexcept:
+        supports_pipes(false),
+        supports_detach(false),
+        supports_process_groups(false),
+        supports_search_path(false),
+        _padding {} {}
 };
 
 // Core process operations - to be implemented per platform
-expected<process_handle, process_error> spawn_process(const spawn_request& request, pipe_handle* stdin_pipe,
-                                                       pipe_handle* stdout_pipe, pipe_handle* stderr_pipe) noexcept;
+expected<process_handle, process_error> spawn_process(
+  const spawn_request& request,
+  pipe_handle*         stdin_pipe,
+  pipe_handle*         stdout_pipe,
+  pipe_handle*         stderr_pipe) noexcept;
 
 expected<int, process_error> wait_process(process_handle& handle, bool no_hang = false) noexcept;
 
