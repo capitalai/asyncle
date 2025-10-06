@@ -1,8 +1,8 @@
 #ifndef ASYNCLE_HARDWARE_MEMORY_HPP
 #define ASYNCLE_HARDWARE_MEMORY_HPP
 
+#include "../../platform/hardware.hpp"
 #include "arch/current.hpp"
-#include "platform/cache_detection.hpp"
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -33,13 +33,12 @@ namespace asyncle::hardware {
 // Runtime Cache Detection (Platform-specific)
 // ============================================================================
 
-// cache_info structure is defined in platform/cache_detection.hpp
-using platform::cache_info;
+// Import cache detection from platform layer
+// This follows the same pattern as platform::file, platform::mmap, platform::process
+using platform::hardware::cache_info;
+using platform::hardware::detect_cache_info;
 
-// Detect cache information at runtime (implemented in platform-specific source files)
-using platform::detect_cache_info;
-
-// Detect cache line size at runtime
+// Convenience function to detect cache line size at runtime
 inline size_t detect_cache_line_size() noexcept { return detect_cache_info().l1_line_size; }
 
 // ============================================================================

@@ -1,8 +1,8 @@
 #ifdef _WIN32
 
-#include "../../../include/asyncle/hardware/platform/cache_detection.hpp"
+#include "../../include/platform/hardware.hpp"
 
-namespace asyncle::hardware::platform {
+namespace platform::hardware {
 
 cache_info detect_cache_info() noexcept {
     cache_info info;
@@ -13,6 +13,6 @@ cache_info detect_cache_info() noexcept {
     return info;
 }
 
-}  // namespace asyncle::hardware::platform
+}  // namespace platform::hardware
 
 #endif  // _WIN32

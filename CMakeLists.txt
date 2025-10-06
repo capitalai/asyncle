@@ -44,14 +44,14 @@ add_library(platform_process STATIC src/platform/process_linux.cpp)
 target_include_directories(platform_process PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(platform_process PUBLIC cxx_std_23)
 
-# Hardware utilities library - compiled implementation
-add_library(hardware_memory STATIC
-    src/hardware/platform/cache_detection_linux.cpp
-    src/hardware/platform/cache_detection_windows.cpp
-    src/hardware/platform/cache_detection_macos.cpp
+# Cross-platform hardware utilities library - compiled implementation
+add_library(platform_hardware STATIC
+    src/platform/hardware_linux.cpp
+    src/platform/hardware_windows.cpp
+    src/platform/hardware_macos.cpp
 )
-target_include_directories(hardware_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_features(hardware_memory PUBLIC cxx_std_23)
+target_include_directories(platform_hardware PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(platform_hardware PUBLIC cxx_std_23)
 
 if(ASYNCLE_BUILD_TESTS)
   enable_testing()
@@ -116,6 +116,6 @@ if(ASYNCLE_BUILD_TESTS)
 
   # Hardware memory utilities test
   add_executable(test_hardware_memory tests/test_hardware_memory.cpp)
-  target_link_libraries(test_hardware_memory PRIVATE asyncle hardware_memory)
+  target_link_libraries(test_hardware_memory PRIVATE asyncle platform_hardware)
   add_test(NAME hardware.memory COMMAND test_hardware_memory)
 endif()
