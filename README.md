@@ -144,6 +144,26 @@ ctest --test-dir build -R "asyncle.base"      # base layer tests
 - `ASYNCLE_BUILD_TESTS=ON/OFF` - Build unit tests (default: ON)
 - Standard CMake build types: Debug, Release, RelWithDebInfo, MinSizeRel
 
+## Development Setup
+
+### Git Hooks
+
+The project includes git hooks to ensure code quality before commits:
+
+```bash
+# Install git hooks (recommended for contributors)
+./scripts/setup-hooks.sh
+```
+
+The pre-commit hook will:
+- Check code formatting with clang-format-18
+- Run a quick build check to catch compilation errors
+
+To bypass hooks temporarily (not recommended):
+```bash
+git commit --no-verify
+```
+
 ## Testing
 
 The project includes comprehensive unit tests for all modules:
