@@ -33,6 +33,13 @@ using process_void_result = void_result<process_error>;
 
 // Single RAII process class with full capabilities
 class process {
+    public:
+    // Type aliases for result types and error handling
+    using error_type = process_error;
+    template <typename T>
+    using result_type = process_result<T>;
+    using void_result_type = process_void_result;
+
     private:
     process_handle handle_;
     pipe_handle    stdin_;

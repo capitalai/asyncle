@@ -59,6 +59,12 @@ struct process_error {
     constexpr process_error(error_domain d, error_code c, uint8_t e = 0) noexcept: domain(d), platform_errno(e), code(c) {}
 };
 
+// Result type templates for consistent error handling
+template <typename T>
+using result = expected<T, process_error>;
+
+using void_result = expected<void, process_error>;
+
 // Pipe modes
 enum class pipe_mode : uint8_t {
     none      = 0,  // No pipe (inherit from parent or redirect to /dev/null)

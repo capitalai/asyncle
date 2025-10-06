@@ -34,6 +34,13 @@ using mmap_void_result = void_result<memory_error>;
 
 // Single RAII mmap class with full capabilities
 class mmap {
+    public:
+    // Type aliases for result types and error handling
+    using error_type = memory_error;
+    template <typename T>
+    using result_type = mmap_result<T>;
+    using void_result_type = mmap_void_result;
+
     private:
     memory_region region_;
 

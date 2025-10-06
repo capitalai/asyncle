@@ -69,6 +69,12 @@ struct memory_error {
     constexpr explicit operator bool() const noexcept { return is_success(); }
 };
 
+// Result type templates for consistent error handling
+template <typename T>
+using result = expected<T, memory_error>;
+
+using void_result = expected<void, memory_error>;
+
 // Access permissions
 enum class access_mode : uint8_t {
     none       = 0x00,

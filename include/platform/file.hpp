@@ -21,6 +21,12 @@ struct file_info;
 struct io_request;
 struct io_result;
 
+// Result type templates for consistent error handling
+template <typename T>
+using result = expected<T, file_error>;
+
+using void_result = expected<void, file_error>;
+
 // Flattened error system - consistent with mmap module
 enum class error_domain : uint8_t {
     system   = 0,  // System/OS errors (errno)

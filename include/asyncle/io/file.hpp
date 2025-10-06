@@ -39,6 +39,13 @@ using file_void_result = void_result<file_error>;
 
 // Single RAII file class with full capabilities
 class file {
+    public:
+    // Type aliases for result types and error handling
+    using error_type = file_error;
+    template <typename T>
+    using result_type = file_result<T>;
+    using void_result_type = file_void_result;
+
     private:
     file_handle handle_;
 
