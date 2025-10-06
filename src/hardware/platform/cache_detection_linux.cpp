@@ -1,11 +1,11 @@
 #ifdef __linux__
 
-#include "../../include/asyncle/hardware/memory.hpp"
+#include "../../../include/asyncle/hardware/platform/cache_detection.hpp"
 #include <fstream>
 #include <string>
 #include <unistd.h>
 
-namespace asyncle::hardware {
+namespace asyncle::hardware::platform {
 
 cache_info detect_cache_info() noexcept {
     cache_info info;
@@ -57,7 +57,6 @@ cache_info detect_cache_info() noexcept {
                 l1_cache >> size_str;
                 // Parse size string (e.g., "32K", "256K", "8M")
                 size_t size = 0;
-                char   unit = 'K';
                 if(sscanf(size_str.c_str(), "%zuK", &size) == 1) {
                     info.l1_cache_size = size * 1024;
                 } else if(sscanf(size_str.c_str(), "%zuM", &size) == 1) {
@@ -108,6 +107,6 @@ cache_info detect_cache_info() noexcept {
     return info;
 }
 
-}  // namespace asyncle::hardware
+}  // namespace asyncle::hardware::platform
 
 #endif  // __linux__

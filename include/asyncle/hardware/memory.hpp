@@ -1,12 +1,14 @@
 #ifndef ASYNCLE_HARDWARE_MEMORY_HPP
 #define ASYNCLE_HARDWARE_MEMORY_HPP
 
+#include "arch/current.hpp"
+#include "platform/cache_detection.hpp"
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
-// Platform-specific includes
+// Platform-specific includes for intrinsics
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
 #include <emmintrin.h>  // SSE2 for _mm_prefetch, _mm_clflush
 #if defined(__SSE4_2__)
@@ -17,42 +19,25 @@
 namespace asyncle::hardware {
 
 // ============================================================================
-// Cache Line Constants
+// Cache Line Constants (Architecture-specific)
 // ============================================================================
 
-// Compile-time cache line size (conservative default for most modern CPUs)
-// x86-64: 64 bytes, ARM Cortex-A: 64 bytes, Apple M1/M2: 128 bytes
-inline constexpr size_t cache_line_size = 64;
-
-// L1/L2/L3 cache line sizes (typically same as L1)
-inline constexpr size_t l1_cache_line_size = 64;
-inline constexpr size_t l2_cache_line_size = 64;
-inline constexpr size_t l3_cache_line_size = 64;
+// Cache line sizes are architecture-specific and imported from arch/current.hpp:
+// - x86-64: 64 bytes
+// - ARM Cortex-A: 64 bytes
+// - Apple Silicon (M1/M2/M3): 128 bytes
+// - Generic fallback: 64 bytes
+// These constants are already defined in arch/current.hpp
 
 // ============================================================================
-// Runtime Cache Detection
+// Runtime Cache Detection (Platform-specific)
 // ============================================================================
 
-struct cache_info {
-    size_t l1_line_size;
-    size_t l2_line_size;
-    size_t l3_line_size;
-    size_t l1_cache_size;
-    size_t l2_cache_size;
-    size_t l3_cache_size;
+// cache_info structure is defined in platform/cache_detection.hpp
+using platform::cache_info;
 
-    constexpr cache_info() noexcept:
-        l1_line_size(64),
-        l2_line_size(64),
-        l3_line_size(64),
-        l1_cache_size(32 * 1024),
-        l2_cache_size(256 * 1024),
-        l3_cache_size(8 * 1024 * 1024) {}
-};
-
-// Detect cache information at runtime
-// Implemented in platform-specific source files
-cache_info detect_cache_info() noexcept;
+// Detect cache information at runtime (implemented in platform-specific source files)
+using platform::detect_cache_info;
 
 // Detect cache line size at runtime
 inline size_t detect_cache_line_size() noexcept { return detect_cache_info().l1_line_size; }

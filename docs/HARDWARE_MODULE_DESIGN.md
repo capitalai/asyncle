@@ -22,23 +22,42 @@ The `asyncle::hardware` module provides low-level hardware abstractions for high
 
 ## Module Structure
 
+The hardware module is organized with clear separation between CPU architecture and OS platform:
+
 ```
 asyncle/
-├── include/
-│   └── asyncle/
-│       └── hardware/
-│           ├── memory.hpp          # Cache alignment, prefetch, barriers (Phase 1)
-│           ├── capabilities.hpp    # Runtime feature detection (Phase 2)
-│           ├── simd.hpp           # SIMD abstractions (Phase 3)
-│           └── wait.hpp           # umonitor/umwait (Phase 3)
-├── src/
-│   └── hardware/
-│       ├── memory_linux.cpp       # Platform-specific implementations
-│       ├── memory_windows.cpp
-│       └── memory_macos.cpp
+├── include/asyncle/hardware/
+│   ├── memory.hpp                   # Main user interface (Phase 1)
+│   ├── arch/                        # CPU architecture layer
+│   │   ├── detect.hpp              # Compile-time arch detection
+│   │   ├── current.hpp             # Current architecture selection
+│   │   ├── x86_64.hpp              # Intel/AMD x86-64 constants
+│   │   ├── aarch64.hpp             # ARM64 (including Apple Silicon)
+│   │   └── generic.hpp             # Fallback for unknown architectures
+│   ├── platform/                    # OS platform layer
+│   │   └── cache_detection.hpp     # Platform-specific detection interface
+│   ├── capabilities.hpp             # Runtime feature detection (Phase 2)
+│   ├── simd.hpp                     # SIMD abstractions (Phase 3)
+│   └── wait.hpp                     # umonitor/umwait (Phase 3)
+├── src/hardware/platform/
+│   ├── cache_detection_linux.cpp   # Linux: sysconf + /sys
+│   ├── cache_detection_windows.cpp # Windows: GetLogicalProcessorInfo (TODO)
+│   └── cache_detection_macos.cpp   # macOS: sysctl (TODO)
 └── tests/
     └── test_hardware_memory.cpp
 ```
+
+### Architecture vs Platform
+
+**Architecture Layer (`arch/`)**:
+- CPU-specific constants (cache line sizes, page sizes)
+- Compile-time detection of x86-64, ARM64, Apple Silicon, etc.
+- Hardware capabilities (SSE, AVX, NEON, etc.)
+
+**Platform Layer (`platform/`)**:
+- OS-specific API calls for runtime detection
+- Different detection methods: sysconf (Linux), sysctl (macOS), GetLogicalProcessorInfo (Windows)
+- Same API can work across different CPU architectures
 
 ## Phase 1: Memory Module (Current Priority)
 

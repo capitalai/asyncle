@@ -46,9 +46,9 @@ target_compile_features(platform_process PUBLIC cxx_std_23)
 
 # Hardware utilities library - compiled implementation
 add_library(hardware_memory STATIC
-    src/hardware/memory_linux.cpp
-    src/hardware/memory_windows.cpp
-    src/hardware/memory_macos.cpp
+    src/hardware/platform/cache_detection_linux.cpp
+    src/hardware/platform/cache_detection_windows.cpp
+    src/hardware/platform/cache_detection_macos.cpp
 )
 target_include_directories(hardware_memory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(hardware_memory PUBLIC cxx_std_23)
