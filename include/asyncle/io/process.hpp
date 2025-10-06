@@ -2,6 +2,7 @@
 #define ASYNCLE_IO_PROCESS_HPP
 
 #include "../../platform/process.hpp"
+#include "result.hpp"
 #include <memory>
 #include <span>
 #include <string_view>
@@ -23,6 +24,12 @@ using platform::process::process_handle;
 using platform::process::spawn_flags;
 using platform::process::spawn_request;
 using platform::process::unexpect;
+
+// Standardized result types for process operations
+template <typename T>
+using process_result = result<T, process_error>;
+
+using process_void_result = void_result<process_error>;
 
 // Single RAII process class with full capabilities
 class process {
@@ -96,7 +103,7 @@ class process {
     ~process() { close_pipes(); }
 
     // Core operations
-    expected<process_handle, process_error> spawn(const spawn_request& request) noexcept {
+    process_result<process_handle> spawn(const spawn_request& request) noexcept {
         close_pipes();
         pipe_handle stdin_pipe, stdout_pipe, stderr_pipe;
         auto        result = platform::process::spawn_process(request, &stdin_pipe, &stdout_pipe, &stderr_pipe);
@@ -109,7 +116,7 @@ class process {
         return result;
     }
 
-    expected<process_handle, process_error> spawn(const char* executable, const char* const* args,
+    process_result<process_handle> spawn(const char* executable, const char* const* args,
                                                     pipe_mode stdin_mode  = pipe_mode::pipe,
                                                     pipe_mode stdout_mode = pipe_mode::pipe,
                                                     pipe_mode stderr_mode = pipe_mode::pipe) noexcept {
@@ -122,18 +129,18 @@ class process {
         return spawn(req);
     }
 
-    expected<int, process_error> wait(bool no_hang = false) noexcept {
-        if(!is_running()) { return expected<int, process_error>(unexpect, process_error(error_code::invalid_argument)); }
+    process_result<int> wait(bool no_hang = false) noexcept {
+        if(!is_running()) { return process_result<int>(unexpect, process_error(error_code::invalid_argument)); }
         return platform::process::wait_process(handle_, no_hang);
     }
 
-    expected<void, process_error> kill(int signal) noexcept {
-        if(!is_running()) { return expected<void, process_error>(unexpect, process_error(error_code::invalid_argument)); }
+    process_void_result kill(int signal) noexcept {
+        if(!is_running()) { return process_void_result(unexpect, process_error(error_code::invalid_argument)); }
         return platform::process::kill_process(handle_, signal);
     }
 
-    expected<void, process_error> terminate() noexcept {
-        if(!is_running()) { return expected<void, process_error>(unexpect, process_error(error_code::invalid_argument)); }
+    process_void_result terminate() noexcept {
+        if(!is_running()) { return process_void_result(unexpect, process_error(error_code::invalid_argument)); }
         return platform::process::terminate_process(handle_);
     }
 
@@ -153,71 +160,71 @@ class process {
     }
 
     // I/O operations
-    expected<io_result, process_error> write_stdin(const io_request& request) noexcept {
+    process_result<io_result> write_stdin(const io_request& request) noexcept {
         if(!stdin_.is_valid()) {
-            return expected<io_result, process_error>(unexpect, process_error(error_code::invalid_argument));
+            return process_result<io_result>(unexpect, process_error(error_code::invalid_argument));
         }
         return platform::process::write_pipe(stdin_, request);
     }
 
-    expected<size_t, process_error> write_stdin(const void* buffer, size_t length) noexcept {
+    process_result<size_t> write_stdin(const void* buffer, size_t length) noexcept {
         io_request req {};
         req.buffer = const_cast<void*>(buffer);
         req.length = length;
         auto result = write_stdin(req);
-        if(result) { return expected<size_t, process_error>(result.value().bytes_transferred); }
-        return expected<size_t, process_error>(unexpect, result.error());
+        if(result) { return process_result<size_t>(result.value().bytes_transferred); }
+        return process_result<size_t>(unexpect, result.error());
     }
 
-    expected<io_result, process_error> read_stdout(const io_request& request) noexcept {
+    process_result<io_result> read_stdout(const io_request& request) noexcept {
         if(!stdout_.is_valid()) {
-            return expected<io_result, process_error>(unexpect, process_error(error_code::invalid_argument));
+            return process_result<io_result>(unexpect, process_error(error_code::invalid_argument));
         }
         return platform::process::read_pipe(stdout_, request);
     }
 
-    expected<size_t, process_error> read_stdout(void* buffer, size_t length) noexcept {
+    process_result<size_t> read_stdout(void* buffer, size_t length) noexcept {
         io_request req {};
         req.buffer = buffer;
         req.length = length;
         auto result = read_stdout(req);
-        if(result) { return expected<size_t, process_error>(result.value().bytes_transferred); }
-        return expected<size_t, process_error>(unexpect, result.error());
+        if(result) { return process_result<size_t>(result.value().bytes_transferred); }
+        return process_result<size_t>(unexpect, result.error());
     }
 
-    expected<io_result, process_error> read_stderr(const io_request& request) noexcept {
+    process_result<io_result> read_stderr(const io_request& request) noexcept {
         if(!stderr_.is_valid()) {
-            return expected<io_result, process_error>(unexpect, process_error(error_code::invalid_argument));
+            return process_result<io_result>(unexpect, process_error(error_code::invalid_argument));
         }
         return platform::process::read_pipe(stderr_, request);
     }
 
-    expected<size_t, process_error> read_stderr(void* buffer, size_t length) noexcept {
+    process_result<size_t> read_stderr(void* buffer, size_t length) noexcept {
         io_request req {};
         req.buffer = buffer;
         req.length = length;
         auto result = read_stderr(req);
-        if(result) { return expected<size_t, process_error>(result.value().bytes_transferred); }
-        return expected<size_t, process_error>(unexpect, result.error());
+        if(result) { return process_result<size_t>(result.value().bytes_transferred); }
+        return process_result<size_t>(unexpect, result.error());
     }
 
     // Pipe management
-    expected<void, process_error> close_stdin() noexcept {
-        if(!stdin_.is_valid()) { return expected<void, process_error>(); }
+    process_void_result close_stdin() noexcept {
+        if(!stdin_.is_valid()) { return process_void_result(); }
         auto result = platform::process::close_pipe(stdin_);
         if(result) { stdin_ = pipe_handle {}; }
         return result;
     }
 
-    expected<void, process_error> close_stdout() noexcept {
-        if(!stdout_.is_valid()) { return expected<void, process_error>(); }
+    process_void_result close_stdout() noexcept {
+        if(!stdout_.is_valid()) { return process_void_result(); }
         auto result = platform::process::close_pipe(stdout_);
         if(result) { stdout_ = pipe_handle {}; }
         return result;
     }
 
-    expected<void, process_error> close_stderr() noexcept {
-        if(!stderr_.is_valid()) { return expected<void, process_error>(); }
+    process_void_result close_stderr() noexcept {
+        if(!stderr_.is_valid()) { return process_void_result(); }
         auto result = platform::process::close_pipe(stderr_);
         if(result) { stderr_ = pipe_handle {}; }
         return result;

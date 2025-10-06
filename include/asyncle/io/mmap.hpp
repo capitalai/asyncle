@@ -3,6 +3,7 @@
 
 #include "../../platform/mmap.hpp"
 #include "file.hpp"
+#include "result.hpp"
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -24,6 +25,12 @@ using platform::mmap::unexpect;
 
 // Use explicit namespace for mmap-specific types
 namespace mmap_access = platform::mmap;
+
+// Standardized result types for mmap operations
+template <typename T>
+using mmap_result = result<T, memory_error>;
+
+using mmap_void_result = void_result<memory_error>;
 
 // Single RAII mmap class with full capabilities
 class mmap {
@@ -101,16 +108,16 @@ class mmap {
     ~mmap() { unmap(); }
 
     // Core operations
-    expected<memory_region, memory_error> map(const memory_request& request, int fd = -1) noexcept {
+    mmap_result<memory_region> map(const memory_request& request, int fd = -1) noexcept {
         unmap();
         auto result = platform::mmap::map_memory(fd, request);
         if(result) { region_ = result.value(); }
         return result;
     }
 
-    expected<memory_region, memory_error> map(const file& f, const memory_request& request) noexcept {
+    mmap_result<memory_region> map(const file& f, const memory_request& request) noexcept {
         if(!f.is_open()) { 
-            return expected<memory_region, memory_error>(
+            return mmap_result<memory_region>(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -118,7 +125,7 @@ class mmap {
         return map(request, f.fd());
     }
 
-    expected<memory_region, memory_error> map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
+    mmap_result<memory_region> map_anonymous(size_t length, mmap_access::access_mode access = mmap_access::access_mode::read_write) noexcept {
         memory_request req {};
         req.length  = length;
         req.backing = backing_type::anonymous;
@@ -127,9 +134,9 @@ class mmap {
         return map(req, -1);
     }
 
-    expected<memory_region, memory_error> map_file(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
+    mmap_result<memory_region> map_file(const file& f, size_t length, size_t offset = 0, mmap_access::access_mode access = mmap_access::access_mode::read) noexcept {
         if(!f.is_open()) { 
-            return expected<memory_region, memory_error>(
+            return mmap_result<memory_region>(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -152,9 +159,9 @@ class mmap {
     }
 
     // Memory synchronization
-    expected<void, memory_error> sync(bool invalidate_caches = false) noexcept {
+    mmap_void_result sync(bool invalidate_caches = false) noexcept {
         if(!is_mapped()) { 
-            return expected<void, memory_error>(
+            return mmap_void_result(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -163,9 +170,9 @@ class mmap {
     }
 
     // Memory advice
-    expected<void, memory_error> advise(access_pattern pattern) noexcept {
+    mmap_void_result advise(access_pattern pattern) noexcept {
         if(!is_mapped()) { 
-            return expected<void, memory_error>(
+            return mmap_void_result(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -174,9 +181,9 @@ class mmap {
     }
 
     // Memory locking
-    expected<void, memory_error> lock(locking_strategy strategy = locking_strategy::lock_resident) noexcept {
+    mmap_void_result lock(locking_strategy strategy = locking_strategy::lock_resident) noexcept {
         if(!is_mapped()) { 
-            return expected<void, memory_error>(
+            return mmap_void_result(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -184,9 +191,9 @@ class mmap {
         return platform::mmap::lock_memory(region_, strategy);
     }
 
-    expected<void, memory_error> unlock() noexcept {
+    mmap_void_result unlock() noexcept {
         if(!is_mapped()) { 
-            return expected<void, memory_error>(
+            return mmap_void_result(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 
@@ -195,9 +202,9 @@ class mmap {
     }
 
     // Memory prefetch
-    expected<void, memory_error> prefetch(size_t offset = 0, size_t length = 0) noexcept {
+    mmap_void_result prefetch(size_t offset = 0, size_t length = 0) noexcept {
         if(!is_mapped()) { 
-            return expected<void, memory_error>(
+            return mmap_void_result(
                 unexpect, 
                 memory_error(mmap_access::error_code::invalid_argument)
             ); 

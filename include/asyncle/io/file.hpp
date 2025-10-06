@@ -2,6 +2,7 @@
 #define ASYNCLE_IO_FILE_HPP
 
 #include "../../platform/file.hpp"
+#include "result.hpp"
 #include <memory>
 #include <span>
 #include <string_view>
@@ -29,6 +30,12 @@ using platform::file::lock_type;
 using platform::file::seek_origin;
 using platform::file::sync_flags;
 using platform::file::unexpect;
+
+// Standardized result types for file operations
+template <typename T>
+using file_result = result<T, file_error>;
+
+using file_void_result = void_result<file_error>;
 
 // Single RAII file class with full capabilities
 class file {
@@ -75,20 +82,20 @@ class file {
     ~file() { close(); }
 
     // Core operations
-    expected<file_handle, file_error> open(const char* path, const file_request& request) noexcept {
+    file_result<file_handle> open(const char* path, const file_request& request) noexcept {
         close();
         auto result = platform::file::open_file(path, request);
         if(result) { handle_ = result.value(); }
         return result;
     }
 
-    expected<file_handle, file_error> open(const char* path, access_mode mode = access_mode::read_only) noexcept {
+    file_result<file_handle> open(const char* path, access_mode mode = access_mode::read_only) noexcept {
         file_request req {};
         req.access = mode;
         return open(path, req);
     }
 
-    expected<file_handle, file_error> create_temp(const char* dir = nullptr, const file_request& request = {}) noexcept {
+    file_result<file_handle> create_temp(const char* dir = nullptr, const file_request& request = {}) noexcept {
         close();
         auto result = platform::file::create_temp(dir, request);
         if(result) { handle_ = result.value(); }
@@ -103,130 +110,130 @@ class file {
     }
 
     // I/O operations
-    expected<io_result, file_error> read(const io_request& request) const noexcept {
-        if(!is_open()) { return expected<io_result, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<io_result> read(const io_request& request) const noexcept {
+        if(!is_open()) { return file_result<io_result>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::read_file(handle_, request);
     }
 
-    expected<size_t, file_error> read(void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) const noexcept {
+    file_result<size_t> read(void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) const noexcept {
         io_request req {};
         req.buffer = buffer;
         req.length = length;
         req.offset = offset;
         auto result = read(req);
-        if(result) { return expected<size_t, file_error>(result.value().bytes_transferred); }
-        return expected<size_t, file_error>(unexpect, result.error());
+        if(result) { return file_result<size_t>(result.value().bytes_transferred); }
+        return file_result<size_t>(unexpect, result.error());
     }
 
-    expected<io_result, file_error> write(const io_request& request) noexcept {
-        if(!is_open()) { return expected<io_result, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<io_result> write(const io_request& request) noexcept {
+        if(!is_open()) { return file_result<io_result>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::write_file(handle_, request);
     }
 
-    expected<size_t, file_error> write(const void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) noexcept {
+    file_result<size_t> write(const void* buffer, size_t length, uint64_t offset = static_cast<uint64_t>(-1)) noexcept {
         io_request req {};
         req.buffer = const_cast<void*>(buffer);
         req.length = length;
         req.offset = offset;
         auto result = write(req);
-        if(result) { return expected<size_t, file_error>(result.value().bytes_transferred); }
-        return expected<size_t, file_error>(unexpect, result.error());
+        if(result) { return file_result<size_t>(result.value().bytes_transferred); }
+        return file_result<size_t>(unexpect, result.error());
     }
 
     // Vectored I/O
-    expected<io_result, file_error> readv(const io_request* requests, size_t count) const noexcept {
-        if(!is_open()) { return expected<io_result, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<io_result> readv(const io_request* requests, size_t count) const noexcept {
+        if(!is_open()) { return file_result<io_result>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::read_vectored(handle_, requests, count);
     }
 
-    expected<io_result, file_error> writev(const io_request* requests, size_t count) noexcept {
-        if(!is_open()) { return expected<io_result, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<io_result> writev(const io_request* requests, size_t count) noexcept {
+        if(!is_open()) { return file_result<io_result>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::write_vectored(handle_, requests, count);
     }
 
     // File positioning
-    expected<uint64_t, file_error> seek(int64_t offset, seek_origin origin = seek_origin::begin) noexcept {
-        if(!is_open()) { return expected<uint64_t, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<uint64_t> seek(int64_t offset, seek_origin origin = seek_origin::begin) noexcept {
+        if(!is_open()) { return file_result<uint64_t>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::seek_file(handle_, offset, origin);
     }
 
-    expected<uint64_t, file_error> tell() const noexcept {
-        if(!is_open()) { return expected<uint64_t, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<uint64_t> tell() const noexcept {
+        if(!is_open()) { return file_result<uint64_t>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::tell_file(handle_);
     }
 
     // Synchronization
-    expected<void, file_error> sync(sync_flags flags = sync_flags::full_sync) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result sync(sync_flags flags = sync_flags::full_sync) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::sync_file(handle_, flags);
     }
 
-    expected<void, file_error> sync_range(uint64_t offset, uint64_t length, sync_flags flags = sync_flags::full_sync) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result sync_range(uint64_t offset, uint64_t length, sync_flags flags = sync_flags::full_sync) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::sync_range(handle_, offset, length, flags);
     }
 
     // File manipulation
-    expected<void, file_error> truncate(uint64_t size) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result truncate(uint64_t size) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::truncate_file(handle_, size);
     }
 
-    expected<void, file_error> allocate(uint64_t offset, uint64_t length) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result allocate(uint64_t offset, uint64_t length) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::allocate_file(handle_, offset, length);
     }
 
-    expected<void, file_error> deallocate(uint64_t offset, uint64_t length) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result deallocate(uint64_t offset, uint64_t length) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::deallocate_file(handle_, offset, length);
     }
 
     // File locking
-    expected<void, file_error> lock(const file_lock& lock) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result lock(const file_lock& lock) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::lock_file(handle_, lock);
     }
 
-    expected<file_lock, file_error> test_lock(const file_lock& lock) const noexcept {
-        if(!is_open()) { return expected<file_lock, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<file_lock> test_lock(const file_lock& lock) const noexcept {
+        if(!is_open()) { return file_result<file_lock>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::test_lock(handle_, lock);
     }
 
     // File advice
-    expected<void, file_error> advise(uint64_t offset, uint64_t length, file_advice advice) noexcept {
-        if(!is_open()) { return expected<void, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_void_result advise(uint64_t offset, uint64_t length, file_advice advice) noexcept {
+        if(!is_open()) { return file_void_result(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::advise_file(handle_, offset, length, advice);
     }
 
     // Zero-copy operations
-    expected<size_t, file_error> splice_to(file& out, uint64_t* in_offset, uint64_t* out_offset, size_t length, uint32_t flags = 0) noexcept {
+    file_result<size_t> splice_to(file& out, uint64_t* in_offset, uint64_t* out_offset, size_t length, uint32_t flags = 0) noexcept {
         if(!is_open() || !out.is_open()) {
-            return expected<size_t, file_error>(unexpect, file_error(error_code::invalid_argument));
+            return file_result<size_t>(unexpect, file_error(error_code::invalid_argument));
         }
         return platform::file::splice_files(handle_, in_offset, out.handle_, out_offset, length, flags);
     }
 
-    expected<size_t, file_error> sendfile_to(file& out, uint64_t* offset, size_t count) noexcept {
+    file_result<size_t> sendfile_to(file& out, uint64_t* offset, size_t count) noexcept {
         if(!is_open() || !out.is_open()) {
-            return expected<size_t, file_error>(unexpect, file_error(error_code::invalid_argument));
+            return file_result<size_t>(unexpect, file_error(error_code::invalid_argument));
         }
         return platform::file::sendfile_op(out.handle_, handle_, offset, count);
     }
 
     // File information
-    expected<file_info, file_error> stat() const noexcept {
-        if(!is_open()) { return expected<file_info, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<file_info> stat() const noexcept {
+        if(!is_open()) { return file_result<file_info>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::stat_file(handle_);
     }
 
-    expected<uint64_t, file_error> size() const noexcept {
-        if(!is_open()) { return expected<uint64_t, file_error>(unexpect, file_error(error_code::invalid_argument)); }
+    file_result<uint64_t> size() const noexcept {
+        if(!is_open()) { return file_result<uint64_t>(unexpect, file_error(error_code::invalid_argument)); }
         return platform::file::get_file_size(handle_);
     }
 
     // Static utilities
-    static expected<file_info, file_error> stat(const char* path, bool follow_symlinks = true) noexcept {
+    static file_result<file_info> stat(const char* path, bool follow_symlinks = true) noexcept {
         return platform::file::stat_path(path, follow_symlinks);
     }
 
