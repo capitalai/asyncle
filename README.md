@@ -8,18 +8,29 @@ Provide a complete, lightweight async-ready data-flow toolkit with **value/resul
 
 ## Key Features
 
-✅ **Header-only library** - Zero dependencies, easy integration  
-✅ **C++23 concepts** - Modern type constraints and validation  
-✅ **Command pattern** - Flexible, extensible operation dispatch  
-✅ **Type mapping system** - Precise and predicate-based type dispatch  
-✅ **Customization Point Objects** - Standard-compliant extension mechanism  
-✅ **Meta-programming utilities** - Advanced type manipulation tools  
-✅ **Async-ready design** - Works with any execution context  
+### Core Async Framework
+✅ **Header-only library** - Zero dependencies, easy integration
+✅ **C++23 concepts** - Modern type constraints and validation
+✅ **Command pattern** - Flexible, extensible operation dispatch
+✅ **Type mapping system** - Precise and predicate-based type dispatch
+✅ **Customization Point Objects** - Standard-compliant extension mechanism
+✅ **Meta-programming utilities** - Advanced type manipulation tools
+✅ **Async-ready design** - Works with any execution context
+
+### I/O Modules
+✅ **Cross-platform I/O** - File, memory mapping, and process management
+✅ **RAII design** - Automatic resource management with move semantics
+✅ **Zero dependencies** - Direct OS primitive mapping
+✅ **Structured errors** - Expected-based error handling
 ✅ **Comprehensive testing** - Full coverage across all modules
+
+See **[I/O Modules Documentation](docs/IO.md)** for detailed information.
 
 ## Architecture
 
-Asyncle provides a complete async-ready data-flow system with four main layers:
+Asyncle provides two main components:
+
+### 1. Async Framework (Header-only)
 
 ```
 include/asyncle/
@@ -27,7 +38,7 @@ include/asyncle/
 ├── concept.hpp                    # Concept-only header
 ├── concepts/                      # Core concept definitions
 │   ├── basic_concepts.hpp         # Core type concepts
-│   ├── value_concepts.hpp         # Value handling concepts  
+│   ├── value_concepts.hpp         # Value handling concepts
 │   ├── error_concepts.hpp         # Error handling concepts
 │   ├── operation_concepts.hpp     # Pipeline operation concepts
 │   └── utility_concepts.hpp       # Utility types and macros
@@ -37,6 +48,20 @@ include/asyncle/
 └── base/                          # Core implementation
     ├── command.hpp                # Command pattern foundation
     └── cpo.hpp                    # Customization Point Objects
+```
+
+### 2. I/O Modules (Compiled libraries)
+
+```
+include/
+├── platform/                      # Platform abstraction layer
+│   ├── file.hpp / file_linux.hpp
+│   ├── mmap.hpp / mmap_linux.hpp
+│   └── process.hpp / process_linux.hpp
+└── asyncle/io/                    # RAII wrapper layer
+    ├── file.hpp
+    ├── mmap.hpp
+    └── process.hpp
 ```
 
 ### Core Modules
@@ -121,8 +146,9 @@ ctest --test-dir build -R "asyncle.base"      # base layer tests
 
 ## Testing
 
-The project includes comprehensive unit tests for all concept modules:
+The project includes comprehensive unit tests for all modules:
 
+### Async Framework Tests
 - `test_basic_concepts` - Core type concept tests
 - `test_value_concepts` - Value handling concept tests
 - `test_error_concepts` - Error handling concept tests
@@ -133,24 +159,41 @@ The project includes comprehensive unit tests for all concept modules:
 - `test_command` - Command pattern tests
 - `test_cpo` - Customization Point Object tests
 
+### I/O Module Tests
+- `test_platform_file` - File I/O platform layer tests
+- `test_platform_mmap` - Memory mapping platform layer tests
+- `test_platform_process` - Process management platform layer tests
+- `test_asyncle_io` - I/O RAII wrapper integration tests
+
 Run specific test executables:
 ```bash
 cd build
 
-# Concept layer tests
+# Async framework tests
 ./test_basic_concepts
 ./test_value_concepts
 ./test_error_concepts
 ./test_operation_concepts
 ./test_utility_concepts
-
-# Meta layer tests  
 ./test_entries
 ./test_predicates
-
-# Base layer tests
 ./test_command
 ./test_cpo
+
+# I/O module tests
+./test_platform_file
+./test_platform_mmap
+./test_platform_process
+./test_asyncle_io
+```
+
+Run tests by category:
+```bash
+# All async framework tests
+ctest --test-dir build -R "asyncle\."
+
+# All I/O platform tests
+ctest --test-dir build -R "platform\."
 ```
 
 ### Test Coverage
