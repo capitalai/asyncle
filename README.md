@@ -26,6 +26,15 @@ Provide a complete, lightweight async-ready data-flow toolkit with **value/resul
 
 See **[I/O Modules Documentation](docs/IO.md)** for detailed information.
 
+### Hardware Utilities
+✅ **Cache-aware data structures** - Cache line alignment and padding
+✅ **Memory access optimization** - Prefetch hints and barriers
+✅ **False sharing prevention** - Automatic padding for concurrent data
+✅ **Runtime detection** - CPU cache configuration detection
+✅ **Zero overhead** - Header-only with compile-time optimization
+
+See **[Hardware Module Documentation](docs/HARDWARE_MODULE_DESIGN.md)** for detailed information.
+
 ## Architecture
 
 Asyncle provides two main components:
@@ -62,6 +71,18 @@ include/
     ├── file.hpp
     ├── mmap.hpp
     └── process.hpp
+```
+
+### 3. Hardware Utilities (Compiled library)
+
+```
+include/asyncle/hardware/
+└── memory.hpp                     # Cache alignment, prefetch, barriers
+
+src/hardware/
+├── memory_linux.cpp               # Linux cache detection
+├── memory_windows.cpp             # Windows cache detection
+└── memory_macos.cpp               # macOS cache detection
 ```
 
 ### Core Modules
