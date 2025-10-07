@@ -176,10 +176,12 @@ if(ASYNCLE_BUILD_TESTS)
     add_test(NAME platform.process COMMAND test_platform_process)
   endif()
 
-  # Asyncle I/O modules test
-  add_executable(test_asyncle_io tests/test_asyncle_io.cpp)
-  target_link_libraries(test_asyncle_io PRIVATE asyncle platform_file platform_mmap)
-  add_test(NAME asyncle.io COMMAND test_asyncle_io)
+  # Asyncle I/O modules test (Linux only - file/mmap implementations needed for other platforms)
+  if(UNIX AND NOT APPLE)
+    add_executable(test_asyncle_io tests/test_asyncle_io.cpp)
+    target_link_libraries(test_asyncle_io PRIVATE asyncle platform_file platform_mmap)
+    add_test(NAME asyncle.io COMMAND test_asyncle_io)
+  endif()
 
   # Hardware memory utilities test
   add_executable(test_hardware_memory tests/test_hardware_memory.cpp)
