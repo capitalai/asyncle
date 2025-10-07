@@ -44,15 +44,15 @@ int main() {
     // Test 1: Simple echo command
     std::cout << "Test 1: Simple echo command\n";
     {
-        const char* args[] = {"/bin/echo", "Hello from child process", nullptr};
+        const char* args[] = { "/bin/echo", "Hello from child process", nullptr };
 
         spawn_request req {};
         req.executable  = "/bin/echo";
         req.args        = args;
         req.stdout_mode = pipe_mode::pipe;
 
-        pipe_handle    stdin_pipe, stdout_pipe, stderr_pipe;
-        auto           result = spawn_process(req, &stdin_pipe, &stdout_pipe, &stderr_pipe);
+        pipe_handle stdin_pipe, stdout_pipe, stderr_pipe;
+        auto        result = spawn_process(req, &stdin_pipe, &stdout_pipe, &stderr_pipe);
 
         if(!result) {
             std::cout << "  FAILED: Could not spawn process - " << error_to_string(result.error().code) << "\n\n";
@@ -102,7 +102,7 @@ int main() {
     // Test 2: Bidirectional communication with cat
     std::cout << "Test 2: Bidirectional communication with cat\n";
     {
-        const char* args[] = {"/bin/cat", nullptr};
+        const char* args[] = { "/bin/cat", nullptr };
 
         spawn_request req {};
         req.executable  = "/bin/cat";
@@ -183,8 +183,8 @@ int main() {
     // Test 3: Environment variables
     std::cout << "Test 3: Environment variables\n";
     {
-        const char* args[] = {"/usr/bin/env", nullptr};
-        const char* env[]  = {"TEST_VAR=hello", "ANOTHER_VAR=world", nullptr};
+        const char* args[] = { "/usr/bin/env", nullptr };
+        const char* env[]  = { "TEST_VAR=hello", "ANOTHER_VAR=world", nullptr };
 
         spawn_request req {};
         req.executable  = "/usr/bin/env";
@@ -222,8 +222,9 @@ int main() {
             if(read_result.value().bytes_transferred == 0) break;  // EOF
         }
 
-        std::cout << "  Environment output contains TEST_VAR: "
-                  << (strstr(buffer, "TEST_VAR=hello") != nullptr ? "yes" : "no") << "\n";
+        std::cout
+          << "  Environment output contains TEST_VAR: " << (strstr(buffer, "TEST_VAR=hello") != nullptr ? "yes" : "no")
+          << "\n";
 
         auto exit_result = wait_process(handle, false);
         if(exit_result && strstr(buffer, "TEST_VAR=hello")) {
@@ -239,7 +240,7 @@ int main() {
     // Test 4: Working directory
     std::cout << "Test 4: Working directory\n";
     {
-        const char* args[] = {"/bin/pwd", nullptr};
+        const char* args[] = { "/bin/pwd", nullptr };
 
         spawn_request req {};
         req.executable  = "/bin/pwd";

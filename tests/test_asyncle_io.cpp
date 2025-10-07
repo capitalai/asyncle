@@ -17,7 +17,9 @@ int main() {
         const char* test_file = "/tmp/test_asyncle_io.dat";
         {
             file_request req {};
-            req.access      = static_cast<access_mode>(static_cast<uint8_t>(access_mode::write_only) | static_cast<uint8_t>(access_mode::create) | static_cast<uint8_t>(access_mode::truncate));
+            req.access = static_cast<access_mode>(
+              static_cast<uint8_t>(access_mode::write_only) | static_cast<uint8_t>(access_mode::create)
+              | static_cast<uint8_t>(access_mode::truncate));
             req.permissions = 0644;
 
             file f(test_file, req);
@@ -52,7 +54,8 @@ int main() {
         // Test 3: Use file request for advanced options
         {
             file_request req {};
-            req.access = static_cast<access_mode>(static_cast<uint8_t>(access_mode::read_write) | static_cast<uint8_t>(access_mode::direct));
+            req.access = static_cast<access_mode>(
+              static_cast<uint8_t>(access_mode::read_write) | static_cast<uint8_t>(access_mode::direct));
             file f;
             auto result = f.open(test_file, req);
             if(!result.has_value()) {
@@ -87,13 +90,15 @@ int main() {
         {
             auto info = file::stat(test_file);
             assert(info.has_value());
-            std::cout << "File info - size: " << info.value().size << ", type: " << static_cast<int>(info.value().type) << "\n";
+            std::cout
+              << "File info - size: " << info.value().size << ", type: " << static_cast<int>(info.value().type) << "\n";
         }
 
         // Test 6: Capabilities
         auto caps = file::capabilities();
-        std::cout << "File capabilities - splice: " << (caps.supports_splice ? "yes" : "no")
-                  << ", direct_io: " << (caps.supports_direct_io ? "yes" : "no") << "\n";
+        std::cout
+          << "File capabilities - splice: " << (caps.supports_splice ? "yes" : "no")
+          << ", direct_io: " << (caps.supports_direct_io ? "yes" : "no") << "\n";
 
         // Cleanup
         std::remove(test_file);
@@ -116,9 +121,7 @@ int main() {
 
             // Test advise
             auto advise_result = m.advise(access_pattern::sequential_access);
-            if(advise_result.has_value()) {
-                std::cout << "Memory advice applied\n";
-            }
+            if(advise_result.has_value()) { std::cout << "Memory advice applied\n"; }
         }
 
         // Test 2: File-backed mapping
@@ -128,7 +131,9 @@ int main() {
             // Create a file with content
             {
                 file_request req {};
-                req.access = static_cast<access_mode>(static_cast<uint8_t>(access_mode::write_only) | static_cast<uint8_t>(access_mode::create) | static_cast<uint8_t>(access_mode::truncate));
+                req.access = static_cast<access_mode>(
+                  static_cast<uint8_t>(access_mode::write_only) | static_cast<uint8_t>(access_mode::create)
+                  | static_cast<uint8_t>(access_mode::truncate));
                 file f(mmap_file, req);
 
                 const char* content = "This is mapped file content for testing!";
@@ -155,14 +160,14 @@ int main() {
 
             // Test 3: Map with custom request
             {
-                file f(mmap_file, access_mode::read_write);
+                file           f(mmap_file, access_mode::read_write);
                 memory_request req {};
-                req.length     = mmap::align_to_page(100);
-                req.offset     = 0;
-                req.backing    = backing_type::file_backed;
-                req.access     = mmap_access::access_mode::read_write;
-                req.sharing    = sharing_mode::shared;
-                req.placement  = placement_strategy::any_address;
+                req.length    = mmap::align_to_page(100);
+                req.offset    = 0;
+                req.backing   = backing_type::file_backed;
+                req.access    = mmap_access::access_mode::read_write;
+                req.sharing   = sharing_mode::shared;
+                req.placement = placement_strategy::any_address;
 
                 mmap m(f, req);
                 assert(m.is_mapped());
@@ -193,12 +198,12 @@ int main() {
         // Test 4: Large anonymous mapping with request
         {
             memory_request req {};
-            req.length     = 1024 * 1024;  // 1MB
-            req.backing    = backing_type::anonymous;
-            req.access     = mmap_access::access_mode::read_write;
-            req.sharing    = sharing_mode::private_cow;
-            req.locking    = locking_strategy::no_lock;
-            req.placement  = placement_strategy::any_address;
+            req.length    = 1024 * 1024;  // 1MB
+            req.backing   = backing_type::anonymous;
+            req.access    = mmap_access::access_mode::read_write;
+            req.sharing   = sharing_mode::private_cow;
+            req.locking   = locking_strategy::no_lock;
+            req.placement = placement_strategy::any_address;
 
             mmap m(req);
             assert(m.is_mapped());
@@ -216,9 +221,10 @@ int main() {
 
         // Test 5: Capabilities
         auto caps = mmap::capabilities();
-        std::cout << "Mmap capabilities - page_size: " << caps.system_page_size
-                  << ", large_pages: " << (caps.supports_large_pages ? "yes" : "no")
-                  << ", memory_lock: " << (caps.supports_memory_lock ? "yes" : "no") << "\n";
+        std::cout
+          << "Mmap capabilities - page_size: " << caps.system_page_size
+          << ", large_pages: " << (caps.supports_large_pages ? "yes" : "no")
+          << ", memory_lock: " << (caps.supports_memory_lock ? "yes" : "no") << "\n";
 
         // Test 6: Page alignment
         size_t unaligned = 1234;

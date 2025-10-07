@@ -26,19 +26,19 @@ constexpr process_error make_system_error(int errno_val) noexcept {
     error_code code = error_code::io_error;
 
     switch(errno_val) {
-    case EACCES : code = error_code::permission_denied; break;
-    case ENOENT : code = error_code::not_found; break;
-    case ENOMEM : code = error_code::no_memory; break;
-    case EAGAIN : code = error_code::would_block; break;
-    case EINTR  : code = error_code::interrupted; break;
-    case EPIPE  : code = error_code::broken_pipe; break;
-    case ECHILD : code = error_code::process_not_found; break;
-    case EINVAL : code = error_code::invalid_argument; break;
-    case E2BIG  : code = error_code::invalid_argument; break;
-    case ELOOP  : code = error_code::io_error; break;
-    case ENFILE : code = error_code::too_many_processes; break;
-    case EMFILE : code = error_code::too_many_processes; break;
-    default     : code = error_code::io_error; break;
+    case EACCES: code = error_code::permission_denied; break;
+    case ENOENT: code = error_code::not_found; break;
+    case ENOMEM: code = error_code::no_memory; break;
+    case EAGAIN: code = error_code::would_block; break;
+    case EINTR : code = error_code::interrupted; break;
+    case EPIPE : code = error_code::broken_pipe; break;
+    case ECHILD: code = error_code::process_not_found; break;
+    case EINVAL: code = error_code::invalid_argument; break;
+    case E2BIG : code = error_code::invalid_argument; break;
+    case ELOOP : code = error_code::io_error; break;
+    case ENFILE: code = error_code::too_many_processes; break;
+    case EMFILE: code = error_code::too_many_processes; break;
+    default    : code = error_code::io_error; break;
     }
 
     return process_error(error_domain::system, code, static_cast<uint8_t>(errno_val));
@@ -61,9 +61,11 @@ inline bool set_cloexec(int fd) noexcept {
 }  // namespace detail
 
 // Implementation functions
-expected<process_handle, process_error> spawn_process_impl(const spawn_request& request, pipe_handle* stdin_pipe,
-                                                             pipe_handle* stdout_pipe,
-                                                             pipe_handle* stderr_pipe) noexcept;
+expected<process_handle, process_error> spawn_process_impl(
+  const spawn_request& request,
+  pipe_handle*         stdin_pipe,
+  pipe_handle*         stdout_pipe,
+  pipe_handle*         stderr_pipe) noexcept;
 
 expected<int, process_error> wait_process_impl(process_handle& handle, bool no_hang) noexcept;
 

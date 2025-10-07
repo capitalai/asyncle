@@ -259,12 +259,10 @@ struct memory_caps {
 // These are implemented by platform-specific modules
 
 // Map a region of memory according to the request
-expected<memory_region, memory_error>
-  map_memory(int file_descriptor, const memory_request& request) noexcept;
+expected<memory_region, memory_error> map_memory(int file_descriptor, const memory_request& request) noexcept;
 
 // Synchronize a mapped region to storage
-expected<void, memory_error>
-  sync_memory(const memory_region& region, bool invalidate_caches = false) noexcept;
+expected<void, memory_error> sync_memory(const memory_region& region, bool invalidate_caches = false) noexcept;
 
 // Unmap a previously mapped region
 void unmap_memory(const memory_region& region) noexcept;
