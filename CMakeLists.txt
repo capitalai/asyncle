@@ -23,11 +23,74 @@ else()
 endif()
 
 option(ASYNCLE_BUILD_TESTS "Build Asyncle tests" ON)
+option(FORMAT_ENABLE_SIMDJSON "Enable simdjson JSON parser in format library" OFF)
+option(FORMAT_ENABLE_GLAZE "Enable Glaze JSON parser in format library" OFF)
+option(FORMAT_USE_FETCHCONTENT "Auto-fetch missing dependencies with FetchContent" OFF)
 
 add_library(asyncle INTERFACE)
 target_include_directories(asyncle INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # Add compile features to ensure proper C++23 support
 target_compile_features(asyncle INTERFACE cxx_std_23)
+
+# Format library - thin wrappers for data format parsers (JSON, etc.)
+# Similar to platform library, this is a foundation layer
+add_library(format INTERFACE)
+target_include_directories(format INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(format INTERFACE cxx_std_23)
+
+# Optional JSON parser support in format library
+if(FORMAT_ENABLE_SIMDJSON)
+    find_package(simdjson QUIET)
+    if(simdjson_FOUND)
+        message(STATUS "simdjson found (version ${simdjson_VERSION})")
+        target_compile_definitions(format INTERFACE FORMAT_HAS_SIMDJSON)
+        target_link_libraries(format INTERFACE simdjson::simdjson)
+    elseif(FORMAT_USE_FETCHCONTENT)
+        message(STATUS "simdjson not found, fetching via FetchContent...")
+        include(FetchContent)
+        FetchContent_Declare(
+            simdjson
+            GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+            GIT_TAG v3.10.1
+            GIT_SHALLOW TRUE
+        )
+        FetchContent_MakeAvailable(simdjson)
+        target_compile_definitions(format INTERFACE FORMAT_HAS_SIMDJSON)
+        target_link_libraries(format INTERFACE simdjson::simdjson)
+        message(STATUS "simdjson fetched successfully")
+    else()
+        message(WARNING "simdjson not found")
+        message(WARNING "  System install: sudo apt install libsimdjson-dev")
+        message(WARNING "  Or use FetchContent: cmake -DFORMAT_USE_FETCHCONTENT=ON")
+        message(WARNING "  See: docs/EXTERNAL_DEPENDENCIES.md")
+    endif()
+endif()
+
+if(FORMAT_ENABLE_GLAZE)
+    find_package(glaze QUIET)
+    if(glaze_FOUND)
+        message(STATUS "Glaze found (version ${glaze_VERSION})")
+        target_compile_definitions(format INTERFACE FORMAT_HAS_GLAZE)
+        target_link_libraries(format INTERFACE glaze::glaze)
+    elseif(FORMAT_USE_FETCHCONTENT)
+        message(STATUS "Glaze not found, fetching via FetchContent...")
+        include(FetchContent)
+        FetchContent_Declare(
+            glaze
+            GIT_REPOSITORY https://github.com/stephenberry/glaze.git
+            GIT_TAG v3.6.3
+            GIT_SHALLOW TRUE
+        )
+        FetchContent_MakeAvailable(glaze)
+        target_compile_definitions(format INTERFACE FORMAT_HAS_GLAZE)
+        target_link_libraries(format INTERFACE glaze::glaze)
+        message(STATUS "Glaze fetched successfully")
+    else()
+        message(WARNING "Glaze not found")
+        message(WARNING "  Recommended: Use FetchContent: cmake -DFORMAT_USE_FETCHCONTENT=ON")
+        message(WARNING "  Manual install: See docs/EXTERNAL_DEPENDENCIES.md")
+    endif()
+endif()
 
 # Cross-platform mmap library - compiled implementation
 add_library(platform_mmap STATIC src/platform/mmap_linux.cpp)
@@ -118,4 +181,22 @@ if(ASYNCLE_BUILD_TESTS)
   add_executable(test_hardware_memory tests/test_hardware_memory.cpp)
   target_link_libraries(test_hardware_memory PRIVATE asyncle platform_hardware)
   add_test(NAME hardware.memory COMMAND test_hardware_memory)
+
+  # Format library JSON parser tests (optional - requires external libraries)
+  if(FORMAT_ENABLE_SIMDJSON OR FORMAT_ENABLE_GLAZE)
+    add_executable(test_format_json tests/test_format_json.cpp)
+    target_link_libraries(test_format_json PRIVATE format)
+    add_test(NAME format.json COMMAND test_format_json)
+
+    if(FORMAT_ENABLE_SIMDJSON AND FORMAT_ENABLE_GLAZE)
+      message(STATUS "format::json tests enabled with both simdjson and Glaze")
+    elseif(FORMAT_ENABLE_SIMDJSON)
+      message(STATUS "format::json tests enabled with simdjson only")
+    elseif(FORMAT_ENABLE_GLAZE)
+      message(STATUS "format::json tests enabled with Glaze only")
+    endif()
+  else()
+    message(STATUS "format::json tests SKIPPED (no parsers enabled)")
+    message(STATUS "  Enable with: -DFORMAT_ENABLE_SIMDJSON=ON -DFORMAT_ENABLE_GLAZE=ON")
+  endif()
 endif()
