@@ -134,12 +134,12 @@ struct cache_padded {
 // ============================================================================
 
 // Check if pointer is cache-aligned
-constexpr bool is_cache_aligned(const void* ptr) noexcept {
+inline bool is_cache_aligned(const void* ptr) noexcept {
     return (reinterpret_cast<uintptr_t>(ptr) % cache_line_size) == 0;
 }
 
 // Align pointer up to next cache line boundary
-constexpr void* align_to_cache_line(void* ptr) noexcept {
+inline void* align_to_cache_line(void* ptr) noexcept {
     auto addr = reinterpret_cast<uintptr_t>(ptr);
     return reinterpret_cast<void*>((addr + cache_line_size - 1) & ~(cache_line_size - 1));
 }

@@ -102,10 +102,12 @@ add_library(platform_file STATIC src/platform/file_linux.cpp)
 target_include_directories(platform_file PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(platform_file PUBLIC cxx_std_23)
 
-# Cross-platform process library - compiled implementation
-add_library(platform_process STATIC src/platform/process_linux.cpp)
-target_include_directories(platform_process PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_features(platform_process PUBLIC cxx_std_23)
+# Cross-platform process library - compiled implementation (Linux only for now)
+if(UNIX AND NOT APPLE)
+  add_library(platform_process STATIC src/platform/process_linux.cpp)
+  target_include_directories(platform_process PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_compile_features(platform_process PUBLIC cxx_std_23)
+endif()
 
 # Cross-platform hardware utilities library - compiled implementation
 add_library(platform_hardware STATIC
@@ -167,10 +169,12 @@ if(ASYNCLE_BUILD_TESTS)
   target_link_libraries(test_platform_file PRIVATE platform_file)
   add_test(NAME platform.file COMMAND test_platform_file)
 
-  # Cross-platform process library test
-  add_executable(test_platform_process tests/test_platform_process.cpp)
-  target_link_libraries(test_platform_process PRIVATE platform_process)
-  add_test(NAME platform.process COMMAND test_platform_process)
+  # Cross-platform process library test (Linux only for now)
+  if(UNIX AND NOT APPLE)
+    add_executable(test_platform_process tests/test_platform_process.cpp)
+    target_link_libraries(test_platform_process PRIVATE platform_process)
+    add_test(NAME platform.process COMMAND test_platform_process)
+  endif()
 
   # Asyncle I/O modules test
   add_executable(test_asyncle_io tests/test_asyncle_io.cpp)
