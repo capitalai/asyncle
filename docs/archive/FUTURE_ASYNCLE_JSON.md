@@ -1,5 +1,10 @@
 # Future asyncle::json Design Notes
 
+> **⚠️ SUPERSEDED**: This document has been superseded by [format_architecture.md](format_architecture.md).
+> The current implementation is `asyncle::format::json`, not `asyncle::json`.
+>
+> **Date**: 2025-10-08
+
 ## Vision
 
 The future `asyncle::json` module will be a high-level async API built on top of `format::json`, providing:

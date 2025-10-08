@@ -1,5 +1,13 @@
 # Format Library Design
 
+> **⚠️ SUPERSEDED**: This document has been superseded by:
+> - [ADR-001: Format Layer Zero-Coupling Design](adr/001-format-layer-zero-coupling.md)
+> - [format_architecture.md](format_architecture.md)
+>
+> **Date**: 2025-10-08
+>
+> Kept for historical reference only.
+
 ## Overview
 
 The `format` library is a foundation layer (similar to `platform`) that provides thin wrappers around external data format parsers. It follows these principles:

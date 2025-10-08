@@ -1,5 +1,10 @@
 # format::json Usage Examples
 
+> **⚠️ SUPERSEDED**: This document has been superseded by [ADR-001](adr/001-format-layer-zero-coupling.md).
+> See [docs/README.md](README.md) for current usage examples.
+>
+> **Date**: 2025-10-08
+
 ## Overview
 
 `format::json` is a foundation layer providing thin wrappers around external JSON libraries. This document provides practical usage examples.

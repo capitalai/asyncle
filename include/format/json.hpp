@@ -1,56 +1,55 @@
 #ifndef FORMAT_JSON_HPP
 #define FORMAT_JSON_HPP
 
-// format::json - JSON parsing library layer
+// format::json - JSON parsing foundation layer
 //
-// This is a format layer (similar to platform layer) that provides thin wrappers
-// around external JSON libraries. The design philosophy:
+// This is a convenience header that includes all format::json components.
 //
-// 1. Minimal abstraction - preserve native library functionality
-// 2. Unified interface - standardize common operations across libraries
-// 3. Capability exposure - let users query parser characteristics
-// 4. No premature integration - operation-based async design comes later
+// Design:
+// - Foundation layer (low-level, sync, thin wrappers)
+// - Type alias selects implementation at compile time
+// - Zero coupling to specific libraries in asyncle layer
 //
-// Supported libraries:
-// - simdjson: High-performance streaming parser with SIMD optimization
-// - Glaze: Compile-time reflection-based parser with structured binding
+// Components:
+// - format::json::parser        - Unified parser (type alias)
+// - format::json::error         - Error types
+// - format::json::parser_caps   - Parser capabilities
+// - format::json::result<T>     - Result type
 //
 // Usage:
+//   // Direct use of foundation layer
 //   #include <format/json.hpp>
 //
-//   // simdjson for streaming market data
-//   format::json::simdjson_parser parser;
-//   auto doc = parser.parse(json_string);
-//   if (doc) {
-//       double price = doc.value()["price"].get_double();
-//   }
+//   format::json::parser parser(json_string);
+//   auto doc = parser.iterate();
 //
-//   // Glaze for structured configuration
-//   format::json::glaze_parser parser;
-//   auto config = parser.parse<Config>(json_string);
+//   // Or use asyncle layer (recommended)
+//   #include <asyncle/format/json.hpp>
 //
-// Design notes:
-// - This is NOT the final asyncle::json module with builder/make/try_take
-// - This is the foundation layer, like platform::file vs asyncle::io::file
-// - Future asyncle::json will build on top of this format layer
-// - Async design (builder pattern, query objects, etc.) deferred to asyncle layer
+//   auto parser = asyncle::format::json::make_parser()
+//       .source(json_string)
+//       .make();
 
-#include "json/types.hpp"
+#include "json/concepts.hpp"  // json_parser concept
+#include "json/parser.hpp"    // Unified parser (type alias)
+#include "json/types.hpp"     // error, result, parser_caps
 
-// Include implementations based on feature flags
-#ifdef FORMAT_HAS_SIMDJSON
-#include "json/simdjson.hpp"
-#endif
-
-#ifdef FORMAT_HAS_GLAZE
-#include "json/glaze.hpp"
-#endif
+// Note: Implementation (simdjson.hpp) is included by json/parser.hpp
+// based on feature flags.
 
 namespace format::json {
 
 // Re-export key types for convenience
 using error_type = error;
 using caps_type  = parser_caps;
+
+// Unified parser type (implementation selected at compile time)
+// - If FORMAT_HAS_SIMDJSON: parser = simdjson_document
+// - Otherwise: parser = stub_parser (compile-time error helper)
+//
+// This is what asyncle::format::json uses internally.
+//
+// Note: For serialization, use format::serialize (which can use Glaze).
 
 }  // namespace format::json
 

@@ -1,5 +1,10 @@
 # JSON Parser Analysis for Asyncle
 
+> **⚠️ SUPERSEDED**: This analysis has been superseded by [ADR-001](adr/001-format-layer-zero-coupling.md).
+> The final design is documented in [format_zero_coupling.md](format_zero_coupling.md).
+>
+> **Date**: 2025-10-08
+
 **Status**: Analysis complete. Implementation as `format::json` foundation layer.
 
 See also:

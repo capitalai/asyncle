@@ -1,15 +1,16 @@
 #ifndef FORMAT_JSON_TYPES_HPP
 #define FORMAT_JSON_TYPES_HPP
 
-#include "../../asyncle/compat.hpp"
+#include "../../cxx23_compat/expected.hpp"
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 
 namespace format::json {
 
-// Import expected/unexpect from asyncle
-using asyncle::expected;
-using asyncle::unexpect;
+// Import expected/unexpect from C++23 compat layer
+using cxx23_compat::expected;
+using cxx23_compat::unexpect;
 
 // Helper struct to create unexpected results (similar to std::unexpected)
 template <typename E>
