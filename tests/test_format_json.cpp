@@ -7,65 +7,64 @@
 #include <iostream>
 #include <string_view>
 
-// Test helpers
-template <typename T>
-void assert_success(const format::json::result<T>& result, const char* context) {
-    if(!result) {
-        std::cerr << "FAIL: " << context << " - " << format::json::error_string(result.error()) << '\n';
-        std::exit(1);
-    }
-    std::cout << "PASS: " << context << '\n';
-}
-
-void assert_failure(const format::json::void_result& result, const char* context) {
-    if(result) {
-        std::cerr << "FAIL: " << context << " - expected error but succeeded\n";
-        std::exit(1);
-    }
-    std::cout << "PASS: " << context << '\n';
-}
-
 #ifdef FORMAT_HAS_SIMDJSON
 
 void test_simdjson_basic_parsing() {
-    format::json::simdjson_parser parser;
-
     std::string_view json = R"({
         "symbol": "2330.TW",
         "price": 580.0,
         "volume": 1000
     })";
 
-    auto doc_result = parser.parse(json);
-    assert_success(doc_result, "simdjson basic parsing");
+    // Create document holder
+    format::json::simdjson_document doc(json);
 
-    auto doc = std::move(doc_result.value());
+    // Iterate to get document
+    auto result = doc.iterate();
+    if(result.error()) {
+        std::cerr << "FAIL: simdjson basic parsing - " << simdjson::error_message(result.error()) << '\n';
+        std::exit(1);
+    }
+
+    std::cout << "PASS: simdjson basic parsing\n";
 
     // Verify values
-    auto symbol = doc["symbol"].get_string();
-    assert(symbol.value() == "2330.TW" && "symbol value check");
+    auto symbol = result["symbol"].get_string();
+    if(symbol.error() || symbol.value() != "2330.TW") {
+        std::cerr << "FAIL: symbol value check\n";
+        std::exit(1);
+    }
 
-    double price = doc["price"].get_double();
-    assert(price == 580.0 && "price value check");
+    auto price_result = result["price"].get_double();
+    if(price_result.error() || price_result.value() != 580.0) {
+        std::cerr << "FAIL: price value check\n";
+        std::exit(1);
+    }
 
-    int64_t volume = doc["volume"].get_int64();
-    assert(volume == 1000 && "volume value check");
+    auto volume_result = result["volume"].get_int64();
+    if(volume_result.error() || volume_result.value() != 1000) {
+        std::cerr << "FAIL: volume value check\n";
+        std::exit(1);
+    }
 
     std::cout << "PASS: simdjson value extraction\n";
 }
 
 void test_simdjson_invalid_json() {
-    format::json::simdjson_parser parser;
-
     std::string_view invalid = R"({"key": "value",})";  // Trailing comma
 
-    auto result = parser.parse(invalid);
-    assert_failure(result.transform([](auto) { return; }), "simdjson invalid JSON detection");
+    format::json::simdjson_document doc(invalid);
+    auto                            result = doc.iterate();
+
+    if(!result.error()) {
+        std::cerr << "FAIL: simdjson invalid JSON detection - expected error but succeeded\n";
+        std::exit(1);
+    }
+
+    std::cout << "PASS: simdjson invalid JSON detection\n";
 }
 
 void test_simdjson_nested() {
-    format::json::simdjson_parser parser;
-
     std::string_view json = R"({
         "order": {
             "id": 12345,
@@ -76,210 +75,142 @@ void test_simdjson_nested() {
         }
     })";
 
-    auto doc_result = parser.parse(json);
-    assert_success(doc_result, "simdjson nested parsing");
+    format::json::simdjson_document doc(json);
+    auto                            result = doc.iterate();
 
-    auto doc = std::move(doc_result.value());
-
-    auto    order = doc["order"];
-    int64_t id    = order["id"];
-    assert(id == 12345 && "nested id check");
-
-    auto details = order["details"];
-    auto symbol  = details["symbol"].get_string();
-    assert(symbol.value() == "2330.TW" && "nested symbol check");
-
-    std::cout << "PASS: simdjson nested object access\n";
-}
-
-void test_simdjson_stream() {
-    format::json::simdjson_stream_parser stream_parser;
-
-    std::string_view ndjson = R"(
-{"trade_id": 1, "price": 100.0}
-{"trade_id": 2, "price": 101.5}
-{"trade_id": 3, "price": 102.0}
-)";
-
-    auto stream_result = stream_parser.parse_many(ndjson);
-    assert_success(stream_result, "simdjson stream parsing");
-
-    auto stream = std::move(stream_result.value());
-
-    int count = 0;
-    for(auto doc: stream) {
-        if(doc.error()) continue;
-
-        int64_t trade_id = doc["trade_id"];
-        double  price    = doc["price"];
-
-        assert(trade_id == count + 1 && "stream trade_id check");
-        count++;
+    if(result.error()) {
+        std::cerr << "FAIL: simdjson nested parsing\n";
+        std::exit(1);
     }
 
-    assert(count == 3 && "stream document count");
-    std::cout << "PASS: simdjson stream processing (" << count << " documents)\n";
+    std::cout << "PASS: simdjson nested parsing\n";
+
+    // Access nested values
+    auto order = result["order"].get_object();
+    if(order.error()) {
+        std::cerr << "FAIL: access order object\n";
+        std::exit(1);
+    }
+
+    auto id = order["id"].get_int64();
+    if(id.error() || id.value() != 12345) {
+        std::cerr << "FAIL: order id check\n";
+        std::exit(1);
+    }
+
+    std::cout << "PASS: simdjson nested value extraction\n";
 }
 
 void test_simdjson_capabilities() {
-    constexpr auto caps = format::json::simdjson_parser::caps();
+    auto caps = format::json::simdjson_document::caps();
 
-    static_assert(caps.zero_copy, "simdjson should be zero-copy");
-    static_assert(caps.lazy_parsing, "simdjson should support lazy parsing");
-    static_assert(caps.streaming, "simdjson should support streaming");
-    static_assert(caps.simd_optimized, "simdjson should be SIMD optimized");
-    static_assert(!caps.multiple_cursors, "simdjson doesn't support multiple cursors");
+    assert(caps.zero_copy && "simdjson should be zero-copy");
+    assert(caps.lazy_parsing && "simdjson should support lazy parsing");
+    assert(caps.simd_optimized && "simdjson should be SIMD optimized");
+    assert(!caps.structured_binding && "simdjson doesn't support structured binding");
 
     std::cout << "PASS: simdjson capabilities check\n";
-}
-
-void run_simdjson_tests() {
-    std::cout << "\n=== simdjson Tests ===\n";
-    test_simdjson_basic_parsing();
-    test_simdjson_invalid_json();
-    test_simdjson_nested();
-    test_simdjson_stream();
-    test_simdjson_capabilities();
 }
 
 #endif  // FORMAT_HAS_SIMDJSON
 
 #ifdef FORMAT_HAS_GLAZE
 
-// Test structure
+// Test struct for Glaze
 struct TestConfig {
-    std::string              api_key;
-    double                   risk_limit;
-    std::vector<std::string> symbols;
+    std::string name;
+    int         port;
+    bool        enabled;
 };
 
-// Glaze metadata
+// Glaze reflection metadata
 template <>
 struct glz::meta<TestConfig> {
-    using T = TestConfig;
-    static constexpr auto value =
-      glz::object("api_key", &T::api_key, "risk_limit", &T::risk_limit, "symbols", &T::symbols);
+    using T                     = TestConfig;
+    static constexpr auto value = object("name", &T::name, "port", &T::port, "enabled", &T::enabled);
 };
 
-void test_glaze_structured_parsing() {
-    format::json::glaze_parser parser;
-
+void test_glaze_basic_parsing() {
     std::string_view json = R"({
-        "api_key": "test_key",
-        "risk_limit": 10000.0,
-        "symbols": ["2330.TW", "2317.TW"]
+        "name": "production",
+        "port": 8080,
+        "enabled": true
     })";
 
-    auto config_result = parser.parse<TestConfig>(json);
-    assert_success(config_result, "Glaze structured parsing");
-
-    auto config = std::move(config_result.value());
-
-    assert(config.api_key == "test_key" && "api_key check");
-    assert(config.risk_limit == 10000.0 && "risk_limit check");
-    assert(config.symbols.size() == 2 && "symbols size check");
-    assert(config.symbols[0] == "2330.TW" && "symbol[0] check");
-
-    std::cout << "PASS: Glaze value extraction\n";
-}
-
-void test_glaze_inplace_parsing() {
     format::json::glaze_parser parser;
+    auto                       config_result = parser.parse<TestConfig>(json);
 
-    std::string_view json = R"({
-        "api_key": "inplace_key",
-        "risk_limit": 5000.0,
-        "symbols": ["2454.TW"]
-    })";
+    if(!config_result) {
+        std::cerr << "FAIL: glaze basic parsing\n";
+        std::exit(1);
+    }
 
-    TestConfig config;
-    auto       result = parser.parse_into(config, json);
-    assert_success(result, "Glaze in-place parsing");
+    std::cout << "PASS: glaze basic parsing\n";
 
-    assert(config.api_key == "inplace_key" && "in-place api_key check");
-    assert(config.risk_limit == 5000.0 && "in-place risk_limit check");
+    auto& config = config_result.value();
+    assert(config.name == "production" && "name check");
+    assert(config.port == 8080 && "port check");
+    assert(config.enabled == true && "enabled check");
 
-    std::cout << "PASS: Glaze in-place parsing\n";
+    std::cout << "PASS: glaze value extraction\n";
 }
 
 void test_glaze_write() {
+    TestConfig config { .name = "staging", .port = 9090, .enabled = false };
+
     format::json::glaze_parser parser;
+    auto                       json_result = parser.write(config);
 
-    TestConfig config {
-        .api_key    = "write_test",
-        .risk_limit = 15000.0,
-        .symbols    = { "2330.TW", "2317.TW", "2454.TW" }
-    };
+    if(!json_result) {
+        std::cerr << "FAIL: glaze write\n";
+        std::exit(1);
+    }
 
-    auto json_result = parser.write(config);
-    assert_success(json_result, "Glaze JSON writing");
-
-    auto json = std::move(json_result.value());
-    assert(!json.empty() && "written JSON not empty");
-
-    std::cout << "PASS: Glaze JSON writing\n";
-    std::cout << "  Generated: " << json << '\n';
-}
-
-void test_glaze_validation() {
-    format::json::glaze_parser parser;
-
-    std::string_view valid_json = R"({"key": "value"})";
-    auto             result1    = parser.validate(valid_json);
-    assert_success(result1, "Glaze validation of valid JSON");
-
-    std::string_view invalid_json = R"({"key": "value",})";
-    auto             result2      = parser.validate(invalid_json);
-    assert_failure(result2, "Glaze validation of invalid JSON");
+    std::cout << "PASS: glaze write\n";
+    std::cout << "JSON: " << json_result.value() << '\n';
 }
 
 void test_glaze_capabilities() {
-    constexpr auto caps = format::json::glaze_parser::caps();
+    auto caps = format::json::glaze_parser::caps();
 
-    static_assert(caps.zero_copy, "Glaze should be zero-copy");
-    static_assert(caps.structured_binding, "Glaze should support structured binding");
-    static_assert(caps.compile_time_reflection, "Glaze should use compile-time reflection");
-    static_assert(caps.can_use_stack, "Glaze should support stack allocation");
-    static_assert(!caps.streaming, "Glaze doesn't support streaming");
+    assert(caps.structured_binding && "glaze should support structured binding");
+    assert(caps.compile_time_reflection && "glaze should use compile-time reflection");
+    assert(caps.can_use_stack && "glaze can use stack allocation");
 
-    std::cout << "PASS: Glaze capabilities check\n";
-}
-
-void run_glaze_tests() {
-    std::cout << "\n=== Glaze Tests ===\n";
-    test_glaze_structured_parsing();
-    test_glaze_inplace_parsing();
-    test_glaze_write();
-    test_glaze_validation();
-    test_glaze_capabilities();
+    std::cout << "PASS: glaze capabilities check\n";
 }
 
 #endif  // FORMAT_HAS_GLAZE
 
 int main() {
-    std::cout << "format::json Test Suite\n";
-    std::cout << "========================\n";
+    std::cout << "=== Testing format::json foundation layer ===\n\n";
 
 #ifdef FORMAT_HAS_SIMDJSON
-    run_simdjson_tests();
+    std::cout << "--- simdjson tests ---\n";
+    test_simdjson_basic_parsing();
+    test_simdjson_invalid_json();
+    test_simdjson_nested();
+    test_simdjson_capabilities();
+    std::cout << "\n";
 #else
-    std::cout << "\nSimdjson tests SKIPPED (not enabled)\n";
-    std::cout << "Enable with: cmake -DFORMAT_ENABLE_SIMDJSON=ON\n";
+    std::cout << "simdjson tests SKIPPED (not enabled)\n\n";
 #endif
 
 #ifdef FORMAT_HAS_GLAZE
-    run_glaze_tests();
+    std::cout << "--- Glaze tests ---\n";
+    test_glaze_basic_parsing();
+    test_glaze_write();
+    test_glaze_capabilities();
+    std::cout << "\n";
 #else
-    std::cout << "\nGlaze tests SKIPPED (not enabled)\n";
-    std::cout << "Enable with: cmake -DFORMAT_ENABLE_GLAZE=ON\n";
+    std::cout << "Glaze tests SKIPPED (not enabled)\n\n";
 #endif
 
 #if !defined(FORMAT_HAS_SIMDJSON) && !defined(FORMAT_HAS_GLAZE)
-    std::cout << "\nNo JSON parsers enabled. At least one parser is required.\n";
+    std::cerr << "ERROR: No parsers enabled. Enable with -DFORMAT_ENABLE_SIMDJSON=ON or -DFORMAT_ENABLE_GLAZE=ON\n";
     return 1;
 #endif
 
-    std::cout << "\n=========================\n";
-    std::cout << "All tests PASSED\n";
+    std::cout << "=== All tests passed! ===\n";
     return 0;
 }

@@ -5,7 +5,11 @@
 #include <string_view>
 
 #ifdef FORMAT_HAS_SIMDJSON
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <simdjson.h>
+#pragma GCC diagnostic pop
 
 namespace format::json {
 
@@ -53,101 +57,53 @@ inline error convert_error(simdjson::error_code err) noexcept {
     }
 }
 
-// RAII wrapper for simdjson on-demand parser
-// Following platform layer pattern: minimal abstraction, preserve native functionality
-class simdjson_parser {
+// RAII document holder for simdjson on-demand parsing
+// This class owns the memory (padded_string) required for zero-copy parsing
+// Usage: Create instance with JSON, then iterate() to get document for consumption
+//
+// Important: simdjson documents are forward-only iterators that can only be consumed once.
+// The document returned by iterate() is only valid while this object is alive.
+class simdjson_document {
     public:
     using native_document_type = simdjson::ondemand::document;
     using native_parser_type   = simdjson::ondemand::parser;
 
-    simdjson_parser() noexcept: parser_ {}, padded_string_ {} {}
+    // Construct with JSON string - prepares padded memory
+    explicit simdjson_document(std::string_view json): parser_(), padded_(json) {}
 
-    // Non-copyable, moveable (following platform pattern)
-    simdjson_parser(const simdjson_parser&)                = delete;
-    simdjson_parser& operator=(const simdjson_parser&)     = delete;
-    simdjson_parser(simdjson_parser&&) noexcept            = default;
-    simdjson_parser& operator=(simdjson_parser&&) noexcept = default;
+    // Non-copyable, moveable
+    simdjson_document(const simdjson_document&)                = delete;
+    simdjson_document& operator=(const simdjson_document&)     = delete;
+    simdjson_document(simdjson_document&&) noexcept            = default;
+    simdjson_document& operator=(simdjson_document&&) noexcept = default;
 
-    ~simdjson_parser() = default;
+    ~simdjson_document() = default;
 
     // Get parser capabilities
     static constexpr parser_caps caps() noexcept { return simdjson_caps; }
 
-    // Parse JSON from string_view
-    // Note: simdjson requires padding, so this will create padded_string internally
-    result<native_document_type> parse(std::string_view json) noexcept {
-        auto padded_result = simdjson::padded_string::load(json);
-        if(padded_result.error() != simdjson::SUCCESS) { return unexpected(convert_error(padded_result.error())); }
+    // Iterate to get document (can only be called once per instance)
+    // Returns simdjson_result which contains document view
+    // Note: The returned document is only valid while this object is alive
+    //
+    // Example:
+    //   simdjson_document doc(json_string);
+    //   auto result = doc.iterate();
+    //   if(result.error()) { /* handle error */ }
+    //   auto name = result["name"].get_string();
+    simdjson::simdjson_result<native_document_type> iterate() noexcept { return parser_.iterate(padded_); }
 
-        padded_string_ = std::move(padded_result.value_unsafe());
-        return parse_padded(padded_string_);
-    }
+    // Access native parser for advanced usage
+    native_parser_type& parser() noexcept { return parser_; }
 
-    // Parse JSON from padded_string (truly zero-copy)
-    result<native_document_type> parse_padded(simdjson::padded_string& padded) noexcept {
-        auto doc_result = parser_.iterate(padded);
-        if(doc_result.error() != simdjson::SUCCESS) { return unexpected(convert_error(doc_result.error())); }
-        return doc_result.value_unsafe();
-    }
+    const native_parser_type& parser() const noexcept { return parser_; }
 
-    // Parse with explicit lifetime hint
-    result<native_document_type> parse(std::string_view json, source_lifetime lifetime) noexcept {
-        // For simdjson, we always need padding, so lifetime hint doesn't change behavior
-        // But this interface allows future optimizations
-        return parse(json);
-    }
-
-    // Access native simdjson parser for advanced usage
-    native_parser_type& native() noexcept { return parser_; }
-
-    const native_parser_type& native() const noexcept { return parser_; }
-
-    // Get internal padded string (for inspection)
-    const simdjson::padded_string& padded_data() const noexcept { return padded_string_; }
+    // Get internal padded string
+    const simdjson::padded_string& padded_data() const noexcept { return padded_; }
 
     private:
     native_parser_type      parser_;
-    simdjson::padded_string padded_string_;
-};
-
-// Streaming parser for NDJSON (newline-delimited JSON)
-class simdjson_stream_parser {
-    public:
-    using native_stream_type = simdjson::ondemand::document_stream;
-    using native_parser_type = simdjson::ondemand::parser;
-
-    simdjson_stream_parser() noexcept: parser_ {} {}
-
-    simdjson_stream_parser(const simdjson_stream_parser&)                = delete;
-    simdjson_stream_parser& operator=(const simdjson_stream_parser&)     = delete;
-    simdjson_stream_parser(simdjson_stream_parser&&) noexcept            = default;
-    simdjson_stream_parser& operator=(simdjson_stream_parser&&) noexcept = default;
-
-    ~simdjson_stream_parser() = default;
-
-    static constexpr parser_caps caps() noexcept { return simdjson_caps; }
-
-    // Parse multiple JSON documents (e.g., NDJSON)
-    result<native_stream_type>
-      parse_many(std::string_view json, size_t batch_size = simdjson::dom::DEFAULT_BATCH_SIZE) noexcept {
-        auto padded_result = simdjson::padded_string::load(json);
-        if(padded_result.error() != simdjson::SUCCESS) { return unexpected(convert_error(padded_result.error())); }
-
-        padded_string_     = std::move(padded_result.value_unsafe());
-        auto stream_result = parser_.iterate_many(padded_string_, batch_size);
-
-        if(stream_result.error() != simdjson::SUCCESS) { return unexpected(convert_error(stream_result.error())); }
-
-        return stream_result.value_unsafe();
-    }
-
-    native_parser_type& native() noexcept { return parser_; }
-
-    const native_parser_type& native() const noexcept { return parser_; }
-
-    private:
-    native_parser_type      parser_;
-    simdjson::padded_string padded_string_;
+    simdjson::padded_string padded_;
 };
 
 }  // namespace format::json

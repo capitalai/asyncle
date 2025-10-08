@@ -50,9 +50,9 @@ inline error convert_error(glz::error_ctx err) noexcept {
     case error_code::unknown_key               :
     case error_code::missing_key               : return error::key_not_found;
     case error_code::exceeded_static_array_size:
-    case error_code::array_element_out_of_range: return error::index_out_of_bounds;
+    case error_code::array_element_not_found   : return error::index_out_of_bounds;
     case error_code::invalid_flag_input        :
-    case error_code::invalid_nullable_input    : return error::type_mismatch;
+    case error_code::invalid_nullable_read     : return error::type_mismatch;
     default                                    : return error::invalid_syntax;
     }
 }

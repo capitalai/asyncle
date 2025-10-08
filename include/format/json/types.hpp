@@ -7,6 +7,23 @@
 
 namespace format::json {
 
+// Import expected/unexpect from asyncle
+using asyncle::expected;
+using asyncle::unexpect;
+
+// Helper struct to create unexpected results (similar to std::unexpected)
+template <typename E>
+struct unexpected {
+    E error_;
+
+    constexpr explicit unexpected(E err): error_(std::move(err)) {}
+
+    template <typename T>
+    constexpr operator expected<T, E>() const {
+        return expected<T, E>(unexpect, error_);
+    }
+};
+
 // JSON error types
 enum class error {
     none = 0,
